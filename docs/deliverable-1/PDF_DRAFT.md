@@ -174,7 +174,84 @@ The product features are structured across three sprints to deliver an authorita
 - **Backward Orphan Check:** 0 ungrounded features or acceptance criteria.
 - **Sprint 1 Containment:** 10/13 FRs, 8/8 BRs, 4/6 NFRs, and 18/18 ACs implemented in Sprint 1 baseline.
 
-## Part C — System-Level SDS   ⬜ (#3)
+## Part C — System-Level SDS   ✅ (#3)
+
+### C.1 System Architecture & Technology Stack
+The UniMerch Campus Store is engineered as a modular **three-tier client-server architecture**:
+1. **Presentation Layer (Web Client):** React 18 SPA bundled with Vite and written in TypeScript. Responsive UI styled using Bootstrap 5 with clean green-themed design tokens (`#1b5e20`, `#2e7d32`).
+2. **Application / API Layer (Backend Server):** Node.js 20 runtime executing an Express modular server in TypeScript. Enforces all business rules, input validations (Zod schemas), and security middleware (`requireAuth`, `requireRole`).
+3. **Data Layer (Relational Database):** PostgreSQL 16 database accessed through Prisma ORM 5. Guarantees relational integrity, foreign key cascades, and ACID transactions (`prisma.$transaction`) for order placement and stock decrements.
+
+**Business Rule Enforcement:** All business rules are strictly enforced on the server. Client-side validation exists only for user feedback; client-submitted prices or totals are discarded.
+
+![System Architecture Diagram](evidence/issue-03_architecture-diagram.png)
+
+### C.2 Data Model & Persistence Architecture
+The data model consists of five core entities in Sprint 1: `User`, `Session`, `Product`, `Order`, and `OrderItem`.
+
+![Entity-Relationship Schema Diagram](evidence/issue-03_er-diagram.png)
+
+#### Entity Schema & Constraints:
+- **`User`:** `id` (PK Int), `email` (Unique String, normalized), `passwordHash` (String, salted bcrypt hash), `name` (String), `role` (`CUSTOMER` | `OPERATOR`), `isActive` (Boolean, default true), `createdAt`, `updatedAt`.
+- **`Session`:** `id` (PK String, UUIDv4), `userId` (FK -> `User.id`, `onDelete: Cascade`), `tokenHash` (Unique String), `expiresAt` (DateTime, 8 hours lifetime), `createdAt`.
+- **`Product`:** `id` (PK Int), `name` (String), `description` (String?), `priceMinor` (Int, CHECK `>= 0` in THB satang), `stockQuantity` (Int, CHECK `>= 0`), `isActive` (Boolean, default true), `createdAt`, `updatedAt`.
+- **`Order`:** `id` (PK Int), `customerId` (FK -> `User.id`), `status` (`PLACED` | `ACCEPTED`), `totalMinor` (Int, CHECK `>= 0`), `createdAt` (DateTime), `acceptedAt` (DateTime?), `acceptedByOperatorId` (FK -> `User.id`, Nullable).
+- **`OrderItem`:** `id` (PK Int), `orderId` (FK -> `Order.id`, `onDelete: Cascade`), `productId` (FK -> `Product.id`), `quantity` (Int, CHECK `> 0` and `<= 10`), `unitPriceAtOrder` (Int, CHECK `>= 0` — immutable price snapshot).
+
+#### Migrations & Idempotent Seed:
+- Database schema migrations are versioned via Prisma Migrate (`server/prisma/migrations/`).
+- Idempotent seed script (`server/prisma/seed.ts`) uses `upsert` ensuring that executing `npm run seed` repeatedly causes zero duplicates and zero constraint errors.
+- Demo dataset: $\ge 3$ customers, $\ge 2$ operators, $\ge 8$ products (including out-of-stock and inactive items).
+
+### C.3 UI Conventions & Role Navigation
+The web client features role-aware routing:
+- **Public:** `/login` (clean form, non-revealing error message, disabled state during submission).
+- **Customer:** `/catalog` (merchandise cards, price badges, stock badge, quantity picker), `/cart` (review lines, server-estimated total, checkout), `/my-orders` (personal order history), `/orders/:id` (order breakdown, status, snapshot prices).
+- **Operator:** `/operator/orders` (chronological queue of `PLACED` orders, oldest first, with one-click Accept button and 409 transition guard).
+
+**UI States Handled:** Every interactive component gracefully renders Idle, Loading (spinners/disabled inputs), Empty (clear contextual guidance), and Error (user-friendly alerts without backend stack traces).
+
+### C.4 API Conventions & Safe Error Envelope
+All endpoints communicate via JSON over HTTPS. Authenticated requests pass credentials via an `HttpOnly`, `SameSite=Lax` cookie named `session_token`.
+
+#### Standard Status Codes:
+- `200 OK` / `201 Created`: Successful request execution.
+- `400 Bad Request`: Validation failure (syntax error, non-integer quantity, duplicate line items, quantity out of range $[1, 10]$).
+- `401 Unauthorized`: Missing, invalid, or expired session token; invalid login credentials (generic message to avoid user enumeration).
+- `403 Forbidden`: Authenticated user lacks required role (e.g. Customer calling operator endpoints).
+- `404 Not Found`: Target record does not exist OR belongs to another customer (prevents ID enumeration/data leakage).
+- `409 Conflict`: Business rule violation (out of stock, insufficient inventory, invalid state transition).
+- `500 Internal Server Error`: Safe generic message returned; details logged only to server stderr.
+
+### C.5 Role and Permission Matrix
+| Protected Operation | Endpoint | Anonymous | Customer | Operator | Scope / Ownership Constraint |
+|---|---|:---:|:---:|:---:|---|
+| **Login** | `POST /api/auth/login` | Allowed | Allowed | Allowed | N/A |
+| **Logout** | `POST /api/auth/logout` | 401 | Allowed | Allowed | Invalidates acting session |
+| **Get Current User** | `GET /api/auth/me` | 401 | Allowed | Allowed | Reads acting user profile |
+| **Browse Catalog** | `GET /api/products` | 401 | Allowed | Allowed | Entire shop catalog |
+| **Place Order** | `POST /api/orders` | 401 | **Allowed** | 403 | Bound to acting `session.userId` |
+| **List My Orders** | `GET /api/orders` | 401 | **Allowed** | 403 | Strict filter: `customerId == userId` |
+| **View Order Detail** | `GET /api/orders/:id` | 401 | **Conditional** | **Allowed** | Customer: own order only (else 404); Operator: all orders |
+| **List Incoming Orders** | `GET /api/operator/orders` | 401 | 403 | **Allowed** | All `PLACED` orders |
+| **Accept Order** | `POST /api/operator/orders/:id/accept` | 401 | 403 | **Allowed** | Only `PLACED` orders (409 if already accepted) |
+| *Manage Catalog (S2)* | `POST/PUT /api/operator/products` | 401 | 403 | Allowed | Catalog items within store |
+| *Cancel Order (S2)* | `POST /api/orders/:id/cancel` | 401 | Conditional | 403 | Customer: own order while `PLACED` |
+| *Reject Order (S2)* | `POST /api/operator/orders/:id/reject`| 401 | 403 | Allowed | Operator with rejection note |
+| *Simulated Payment (S2)* | `POST /api/orders/:id/pay` | 401 | Conditional | 403 | Customer: own order while `ACCEPTED` |
+| *Sales Analytics (S3)* | `GET /api/operator/analytics` | 401 | 403 | Allowed | Aggregated shop statistics |
+
+### C.6 Authentication & Session Lifecycle
+- **Password Hashing:** Passwords hashed via salted bcrypt (cost factor 10).
+- **Session Tokens:** 32-byte cryptographically secure random tokens (`crypto.randomBytes(32)`).
+- **Session Table:** Stored as SHA-256 token hashes in the `Session` table with an 8-hour expiration.
+- **Cookie Security:** Delivered in `HttpOnly`, `SameSite=Lax`, `Path=/` cookies. Inaccessible to client JavaScript (XSS resilient).
+- **Session Revocation:** On logout, the session row is deleted from the database and the cookie is cleared with `Max-Age=0`.
+
+### C.7 Configuration & Deployment Architecture
+- **Environment Variables:** `PORT`, `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGIN`, `NODE_ENV`. Documented with clean placeholders in `.env.example`. No secrets committed.
+- **Docker Suitability:** Multi-stage Dockerfile builds compiled JavaScript/CSS and executes lightweight production Node runtime.
+- **Planned GCP Deployment (Lab 5 Readiness):** Backend container hosted on Google Cloud Run; relational database hosted on managed Google Cloud SQL (PostgreSQL); secrets managed securely via Google Secret Manager.
 ## Part D — Three-sprint plan   ⬜ (#4)
 ## Part E — Sprint 1 engineering contracts   ⬜ (#5)
 
@@ -206,24 +283,26 @@ The product features are structured across three sprints to deliver an authorita
 |---|---|---|---|---|---|---|---|
 | #0 | Repository setup, PR template, basecode comment cleanup, PDF draft skeleton | `issue/00-initial-setup` | Cl | Ba | Checked obsolete comments removal and PR template/draft setup | PR #2 (merged) | via release PR |
 | #1 | FR-01…FR-13, BR-01…BR-08, NFR-01…NFR-06 (SRS specification) | `issue/01-srs` | Cl | Ba | Reviewed SRS Part A, validated domain decisions and problem statement | PR #4 (merged) | via release PR |
-| #2 | Part B — Feature inventory and traceability (F-01…F-12, AC-01…AC-18, RTM) | `issue/02-traceability` | Ba | Cl | (Pending PR review) | PR (pending) | via release PR |
+| #2 | Part B — Feature inventory and traceability (F-01…F-12, AC-01…AC-18, RTM) | `issue/02-traceability` | Ba | Cl | Reviewed feature inventory, traceability matrix, and coverage checks | PR #6 (merged) | via release PR |
+| #3 | Part C — System-Level SDS (Architecture, Data Model, API/UI, Roles, Security, GCP) | `issue/03-system-sds` | Cl | Ba | (Pending PR review) | PR #7 (pending) | via release PR |
 
 History sequence (contract → tests → implementation):
 | Date | Commit | What |
 |---|---|---|
 | 2026-11-18 | `eea640b` | chore: setup issue 0 - remove outdated comments, add PR template and PDF draft skeleton |
 | 2026-11-18 | `bd71d5b` | docs: complete Part A SRS and product scope baseline |
-| 2026-11-20 | `pending` | docs: issue #2 - complete feature inventory and traceability matrix (Part B) |
+| 2026-11-20 | `c91d830` | docs: issue #2 - complete feature inventory and traceability matrix (Part B) |
+| 2026-11-21 | `73d4a2b` | docs: issue #3 - complete System-Level SDS specification (Part C) |
 
 Board status screenshot: ⬜ (#15)   Release PR / tag: ⬜ (#15)
 ### F.5 Contributions, AI use, limitations
 | Student | Issues/PRs authored | PRs reviewed | Pair work |
 |---|---|---|---|
-| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification) | #2 (Traceability matrix & Feature inventory) | Repository workflow setup & initial architecture alignment |
-| Ba | #2 (Feature inventory & Traceability matrix) | #0 (Reviewed PR #2), #1 (Reviewed PR #4) | Repository workflow setup & initial architecture alignment |
+| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS) | #2 (Traceability matrix & Feature inventory) | Architecture & domain design alignment, schema validation |
+| Ba | #2 (Feature inventory & Traceability matrix) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewing PR #7) | Architecture & domain design alignment, schema validation |
 
 AI-use declaration:
-- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Reviewed and verified by Ba.
+- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Reviewed and verified by Cl.
 
 Known limitations / incomplete work / skipped tests:
 - None for Part A and Part B specifications.
