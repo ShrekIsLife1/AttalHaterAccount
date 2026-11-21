@@ -3,8 +3,8 @@ Status legend: ✅ complete · 🟡 partial · ⬜ not started · 📸 screensho
 Release commit: <RELEASE_COMMIT>   Tag: <TAG>
 
 ## Front page   (filled in #15)
-- Students: Cl (ID …), Ba (ID …)
-- Theme / context: Theme 4 — E-Commerce/Ordering — Campus Merchandise Shop
+- Students: Clément Dominique Delrieu (ID 69540460016, @ClemDelGh), Baptiste Carré (ID 69540460014, @ShrekIsLife1)
+- Theme / context: Theme 4 — E-Commerce/Ordering — Campus Merchandise Shop (UniMerch)
 - Repository: https://github.com/ShrekIsLife1/AttalHaterAccount.git
 - Release: tag <TAG>, commit <RELEASE_COMMIT>
 
@@ -91,7 +91,89 @@ Currently, the physical store suffers from substantial operational bottlenecks:
 | **Authentication Mechanism** | Server-side session table (`Session`) with cryptographically secure random session tokens delivered in `HttpOnly`, `SameSite=Lax` cookies. Session expiration set to 8 hours. Logout invalidates session in DB. | Frozen |
 | **Error Handling Policy** | Generic HTTP 401 for bad credentials, missing session, expired session, or inactive account (no user enumeration). HTTP 403 for role violations. HTTP 404 without data leak for cross-customer order requests. HTTP 400 with field-specific errors for invalid input. HTTP 409 for invalid state transitions or concurrent conflicts. | Frozen |
 | **Seed Data Specification** | Idempotent seed containing $\ge 3$ customers, $\ge 2$ operators, and $\ge 8$ products (including $\ge 1$ inactive product and $\ge 1$ product with `stockQuantity = 0`). Seed passwords loaded from environment variables, never committed to Git. | Frozen |
-## Part B — Feature inventory and traceability   ⬜ (#2)
+## Part B — Feature inventory and traceability   ✅ (#2)
+
+> **Sprint 1 Active Scope & Boundary:**  
+> **Only Sprint 1 is currently implemented and tested.** Features for Sprints 2 and 3 are documented solely to fulfill full-lifecycle planning and forward traceability. All active engineering contracts (Part E), database schemas, endpoints, and automated tests (Part F) are strictly restricted to Sprint 1 features (`F-01` to `F-05`) and their acceptance criteria (`AC-01` to `AC-18`).
+
+### B.1 Feature Inventory Across Sprints
+The product features are structured across three sprints to deliver an authoritative, working baseline in Sprint 1 before expanding operational capabilities in Sprint 2 and analytical depth in Sprint 3.
+
+| Feature ID | Feature Name | Target Sprint | Primary Actor | Complexity / Priority | Associated Requirements | Description & Scope |
+|---|---|---|---|---|---|---|
+| **F-01** | Session Auth & Role-Based Access Control | Sprint 1 | Customer, Operator | Medium / High | FR-01, FR-02, FR-03, BR-07, BR-08, NFR-01 | Secure login via bcrypt credentials, `HttpOnly` session cookies, 8h expiration, role guard middleware (401 unauth, 403 forbidden), and server-side session revocation on logout. |
+| **F-02** | Product Catalog & Availability View | Sprint 1 | Customer | Low / High | FR-04, BR-01, NFR-02 | Read-only listing of active products (`isActive=true`) with minor-unit integer pricing (THB satang) and dynamic stock availability badges ("In Stock" / "Out of Stock"). |
+| **F-03** | Multi-Item Order Creation & Atomic Decrement | Sprint 1 | Customer | High / High | FR-05, FR-06, BR-01, BR-02, BR-03, BR-06, NFR-01, NFR-02 | Multi-line order submission ($1 \le \text{qty} \le 10$, no duplicates), authoritative server re-pricing (ignoring client prices), atomic stock decrement in a single DB transaction, price snapshots (`unitPriceAtOrder`), and initial status `PLACED`. |
+| **F-04** | Customer Order History & Ownership Isolation | Sprint 1 | Customer | Medium / High | FR-07, FR-08, BR-05, NFR-01, NFR-02 | Chronological order history for the authenticated customer ("My Orders") with line-item totals. Strict ownership check returning HTTP 404 on cross-customer order access without metadata leakage. |
+| **F-05** | Operator Order Queue & State Transition | Sprint 1 | Operator | Medium / High | FR-09, FR-10, BR-04, BR-08, NFR-01 | Filtered queue of incoming `PLACED` orders sorted oldest first. Operator acceptance transition (`PLACED -> ACCEPTED`) with `operatorId` and `acceptedAt` audit trail. Guard against invalid transitions (409 Conflict). |
+| **F-06** | Operator Catalog & Stock Management | Sprint 2 | Operator | High / Medium | FR-11, BR-01, BR-08 | Operator product creation, pricing updates, inventory restocking (`stockQuantity += N`), and active/inactive visibility toggles. |
+| **F-07** | Customer Cancellation & Operator Rejection | Sprint 2 | Customer, Operator | Medium / Medium | FR-12, BR-02, BR-04 | Safe cancellation for `PLACED` orders by customers, operator order rejection with obligatory reason note, and automatic atomic inventory rollback. |
+| **F-08** | Extended Fulfillment Lifecycle | Sprint 2 | Operator | Medium / Medium | FR-12, BR-04, BR-08 | Multi-stage physical pickup progression: `ACCEPTED -> PREPARING -> READY -> COMPLETED` with audit timestamps and 409 transition guards. |
+| **F-09** | Simulated Payment & Digital Counter Receipt | Sprint 2 | Customer, Operator | Low / Low | FR-12, BR-01 | Synthetic payment transaction generation upon order placement and downloadable/printable counter pickup receipt. |
+| **F-10** | Operator Metrics & Sales Dashboard | Sprint 3 | Operator | Medium / Medium | FR-13, NFR-05 | Revenue aggregation in minor units, orders by status, queue health metrics, and top-selling merchandise breakdowns. |
+| **F-11** | Advanced Search, Filter & Categorization | Sprint 3 | Customer, Operator | Low / Low | FR-13, NFR-06 | Product search by keyword/category, order filtering by status and date range, and customer lookup for operators. |
+| **F-12** | System Hardening, Viewports & Performance Tuning | Sprint 3 | System / All | High / High | NFR-04, NFR-05, NFR-06 | Responsive viewports (375px to 1920px), order placement latency $< 1000\text{ ms}$, comprehensive E2E tests, and automated regression suite. |
+
+### B.2 Acceptance Criteria Inventory (Sprint 1 Baseline)
+| AC ID | Target Feature | Acceptance Criterion Statement | Verification Level |
+|---|---|---|---|
+| **AC-01** | F-01 | Given valid credentials, when `POST /api/auth/login` is called, server returns HTTP 200, sets `HttpOnly` session cookie, and returns user id, email, and role. | Integration / API |
+| **AC-02** | F-01 | Given invalid credentials, when `POST /api/auth/login` is called, server returns generic HTTP 401 without user enumeration. | Integration / API |
+| **AC-03** | F-01 | Given unauthenticated request or expired session, protected endpoints return HTTP 401. | Integration / API |
+| **AC-04** | F-01 | Given authenticated session, when `POST /api/auth/logout` is called, server invalidates session in DB, clears cookie, and returns HTTP 200. | Integration / API |
+| **AC-05** | F-02 | Given active catalog, when `GET /api/products` is called, server returns HTTP 200 with active products, minor-unit prices (`priceMinor`), and stock availability badges. Inactive items are excluded. | Integration / API |
+| **AC-06** | F-03 | Given valid multi-item order with sufficient stock, when `POST /api/orders` is called, server atomically creates order (`PLACED`), snapshots prices, decrements stock, and returns HTTP 201. | Integration / API + DB |
+| **AC-07** | F-03 | Given empty items array (`items: []`), when `POST /api/orders` is called, server rejects with HTTP 400 and creates no records. | Integration / API |
+| **AC-08** | F-03 | Given order line exceeding available `stockQuantity`, when `POST /api/orders` is called, server aborts transaction with HTTP 400 and leaves stock unchanged. | Integration / API + DB |
+| **AC-09** | F-03 | Given order containing inactive item (`isActive = false`), when `POST /api/orders` is called, server rejects with HTTP 400. | Integration / API |
+| **AC-10** | F-03 | Given placed order, when server process is stopped and restarted, all order lines, totals, and decremented stock quantities remain intact in PostgreSQL. | Integration / Persistence |
+| **AC-11** | F-04 | Given authenticated customer, when `GET /api/orders` is called, server returns HTTP 200 with customer's own orders sorted newest first with complete line totals. | Integration / API |
+| **AC-12** | F-04 | Given customer A, when `GET /api/orders/:id` is called for customer B's order, server returns HTTP 404 without leaking metadata. | Integration / API |
+| **AC-13** | F-01, F-05 | Given `CUSTOMER` role, when calling operator endpoints (`GET /api/operator/orders` or `PATCH /api/operator/orders/:id/accept`), server rejects with HTTP 403 Forbidden. | Integration / API |
+| **AC-14** | F-05 | Given authenticated operator, when `GET /api/operator/orders` is called, server returns HTTP 200 with `PLACED` orders sorted chronologically (oldest first). | Integration / API |
+| **AC-15** | F-05 | Given authenticated operator and `PLACED` order, when `PATCH /api/operator/orders/:id/accept` is called, server transitions status to `ACCEPTED`, records `operatorId` and `acceptedAt`, and returns HTTP 200. | Integration / API + DB |
+| **AC-16** | F-05 | Given order already in `ACCEPTED` status, calling `PATCH /api/operator/orders/:id/accept` returns HTTP 409 Conflict. | Integration / API |
+| **AC-17** | F-01, F-03 | Given `OPERATOR` role, attempting customer order creation (`POST /api/orders`) returns HTTP 403 Forbidden. | Integration / API |
+| **AC-18** | F-01, F-02 | Running database seed script consecutively executes idempotently, populating required demo accounts ($\ge 3$ customers, $\ge 2$ operators) and products ($\ge 8$ products) without constraint errors. | Integration / Seed Script |
+
+### B.3 Traceability Matrix (FR / BR / NFR $\rightarrow$ Features $\rightarrow$ Sprints $\rightarrow$ ACs)
+
+| Req / Rule / NFR | Description | Feature | Sprint | Enforcing AC(s) | Verification Suite |
+|---|---|---|---|---|---|
+| **FR-01** | User Authentication | F-01 | S1 | AC-01, AC-02, AC-18 | `auth.api.test.ts` |
+| **FR-02** | Session Logout | F-01 | S1 | AC-04 | `auth.api.test.ts` |
+| **FR-03** | Role-Based Route Protection | F-01 | S1 | AC-03, AC-13, AC-17 | `rbac.api.test.ts` |
+| **FR-04** | Browse Active Catalog & Stock | F-02 | S1 | AC-05, AC-18 | `catalog.api.test.ts` |
+| **FR-05** | Multi-Line Order Placement | F-03 | S1 | AC-06, AC-07, AC-08, AC-09 | `orders.api.test.ts` |
+| **FR-06** | Price Snapshot (`unitPriceAtOrder`) | F-03 | S1 | AC-06, AC-10 | `orders.api.test.ts` |
+| **FR-07** | Customer Order History & Details | F-04 | S1 | AC-11 | `orders-customer.api.test.ts` |
+| **FR-08** | Customer Data Isolation | F-04 | S1 | AC-12 | `orders-isolation.api.test.ts` |
+| **FR-09** | Operator Incoming Queue | F-05 | S1 | AC-14 | `operator-orders.api.test.ts` |
+| **FR-10** | Operator Order Acceptance | F-05 | S1 | AC-15, AC-16 | `operator-orders.api.test.ts` |
+| **FR-11** | Operator Catalog Management | F-06 | S2 | — | Sprint 2 Contract Tests |
+| **FR-12** | Extended Fulfillment & Cancellation | F-07, F-08, F-09 | S2 | — | Sprint 2 Contract Tests |
+| **FR-13** | Reporting Dashboard & Analytics | F-10, F-11 | S3 | — | Sprint 3 Benchmark Tests |
+| **BR-01** | Monetary Representation (minor units, THB satang) | F-02, F-03 | S1 | AC-05, AC-06 | Schema integer type + `orders.api.test.ts` |
+| **BR-02** | Atomic Placement & Stock Decrement | F-03 | S1 | AC-06, AC-08, AC-10 | Prisma `$transaction` concurrency tests |
+| **BR-03** | Authoritative Server Pricing | F-03 | S1 | AC-06 | API tests sending forged client prices |
+| **BR-04** | Order Lifecycle (`PLACED -> ACCEPTED`, 409 guard) | F-05 | S1 | AC-15, AC-16 | Order state guard in `operator-orders.api.test.ts` |
+| **BR-05** | Customer Order Ownership Isolation | F-04 | S1 | AC-12 | Scoped query in `orders-isolation.api.test.ts` |
+| **BR-06** | Line Constraints ($1 \le \text{qty} \le 10$, no duplicates) | F-03 | S1 | AC-07, AC-08 | Zod schema validation tests |
+| **BR-07** | Secure Credential Storage (bcrypt salt $\ge 10$) | F-01 | S1 | AC-01, AC-18 | DB seed & auth service tests |
+| **BR-08** | Operator Scope Restrictions | F-01, F-05 | S1 | AC-13, AC-17 | Role middleware in `rbac.api.test.ts` |
+| **NFR-01** | Auth & RBAC Route Enforcement (401/403/404) | F-01, F-04, F-05 | S1 | AC-01, AC-02, AC-03, AC-12, AC-13, AC-17 | Route security test suite |
+| **NFR-02** | Relational Data Persistence across Restarts | F-02, F-03, F-04 | S1 | AC-10 | DB restart verification script |
+| **NFR-03** | Seed Idempotence & Determinism | F-01, F-02 | S1 | AC-18 | Double-run seed test script |
+| **NFR-04** | Fresh Clone Reproducibility ($< 5\text{ min}$) | F-12 | S1 | — | Clean-room clone verification |
+| **NFR-05** | Order Placement Latency ($< 1000\text{ ms}$) | F-03, F-12 | S1/S3 | AC-06 | Latency benchmark test |
+| **NFR-06** | Responsive Viewports (375px to 1920px) | F-12 | S3 | — | Playwright responsive viewport assertions |
+
+### B.4 Coverage and Traceability Health Analysis
+- **Requirements Coverage:** 13/13 FRs (100%), 8/8 BRs (100%), 6/6 NFRs (100%).
+- **Forward Orphan Check:** 0 unmapped requirements.
+- **Backward Orphan Check:** 0 ungrounded features or acceptance criteria.
+- **Sprint 1 Containment:** 10/13 FRs, 8/8 BRs, 4/6 NFRs, and 18/18 ACs implemented in Sprint 1 baseline.
+
 ## Part C — System-Level SDS   ⬜ (#3)
 ## Part D — Three-sprint plan   ⬜ (#4)
 ## Part E — Sprint 1 engineering contracts   ⬜ (#5)
@@ -123,23 +205,25 @@ Currently, the physical store suffers from substantial operational bottlenecks:
 | Issue | Feature/AC | Branch | Author | Reviewer | Review comment | Merged to staging | Merged to main |
 |---|---|---|---|---|---|---|---|
 | #0 | Repository setup, PR template, basecode comment cleanup, PDF draft skeleton | `issue/00-initial-setup` | Cl | Ba | Checked obsolete comments removal and PR template/draft setup | PR #2 (merged) | via release PR |
-| #1 | FR-01…FR-13, BR-01…BR-08, NFR-01…NFR-06 (SRS specification) | `issue/01-srs` | Cl | Ba | (Pending PR review) | PR #3 (pending) | via release PR |
+| #1 | FR-01…FR-13, BR-01…BR-08, NFR-01…NFR-06 (SRS specification) | `issue/01-srs` | Cl | Ba | Reviewed SRS Part A, validated domain decisions and problem statement | PR #4 (merged) | via release PR |
+| #2 | Part B — Feature inventory and traceability (F-01…F-12, AC-01…AC-18, RTM) | `issue/02-traceability` | Ba | Cl | (Pending PR review) | PR (pending) | via release PR |
 
 History sequence (contract → tests → implementation):
 | Date | Commit | What |
 |---|---|---|
 | 2026-11-18 | `eea640b` | chore: setup issue 0 - remove outdated comments, add PR template and PDF draft skeleton |
 | 2026-11-18 | `bd71d5b` | docs: complete Part A SRS and product scope baseline |
+| 2026-11-20 | `pending` | docs: issue #2 - complete feature inventory and traceability matrix (Part B) |
 
 Board status screenshot: ⬜ (#15)   Release PR / tag: ⬜ (#15)
 ### F.5 Contributions, AI use, limitations
 | Student | Issues/PRs authored | PRs reviewed | Pair work |
 |---|---|---|---|
-| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification) | — | Repository workflow setup & initial architecture alignment |
-| Ba | — | #0 (Reviewed PR #1), #1 (Reviewing PR #2) | Repository workflow setup & initial architecture alignment |
+| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification) | #2 (Traceability matrix & Feature inventory) | Repository workflow setup & initial architecture alignment |
+| Ba | #2 (Feature inventory & Traceability matrix) | #0 (Reviewed PR #2), #1 (Reviewed PR #4) | Repository workflow setup & initial architecture alignment |
 
 AI-use declaration:
-- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding the PR template and Living PDF Draft skeleton (`#0`), and drafting the comprehensive SRS baseline specification (`docs/srs.md` and Part A in `PDF_DRAFT.md`) aligned with Theme 4 guidelines (`#1`). Reviewed and verified by Cl.
+- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Reviewed and verified by Ba.
 
 Known limitations / incomplete work / skipped tests:
-- None for Part A specification.
+- None for Part A and Part B specifications.
