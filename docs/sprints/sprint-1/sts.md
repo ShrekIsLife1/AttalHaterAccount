@@ -49,3 +49,22 @@ The Sprint 1 Software Test Specification maps **every single Acceptance Criterio
 | **TEST-24** | AC-19 | E2E | Browser instance, seeded test database | Complete Customer journey: Login $\rightarrow$ browse catalog $\rightarrow$ add to cart $\rightarrow$ submit order $\rightarrow$ verify order in My Orders | Order created in DB, visible on customer screen, stock decremented in catalog | `e2e/sprint-1/customer-journey.spec.ts` |
 | **TEST-25** | AC-19 | E2E | Order placed from TEST-24 | Operator journey: Login $\rightarrow$ view incoming queue $\rightarrow$ click accept $\rightarrow$ confirm status is `ACCEPTED` | Order accepted in DB, disappears from `PLACED` queue; Customer reloads and sees `ACCEPTED` status | `e2e/sprint-1/operator-journey.spec.ts` |
 | **TEST-26** | AC-20 | E2E | Customer browser session | Customer navigates to `/operator/orders` URL directly; or attempts out-of-stock order submission | UI redirects away or shows access restricted message; out-of-stock submission displays clear rejection toast | `e2e/sprint-1/access-restrictions.spec.ts` |
+
+---
+
+## 3. Permission Matrix Verification Table (System SDS Alignment)
+
+The following verification matrix directly mirrors the **Role and Permission Matrix** in `docs/system-sds.md` (Section 5) and maps every Sprint 1 endpoint and security boundary to its automated regression test:
+
+| Protected Operation | Endpoint | Anonymous | Customer | Operator | Scope / Ownership Constraint | Automated Test Coverage | Status |
+|---|---|:---:|:---:|:---:|---|---|:---:|
+| **Login** | `POST /api/auth/login` | Allowed | Allowed | Allowed | Authenticates valid credentials, sets `HttpOnly` session cookie; rejects invalid or inactive credentials with generic 401 | `server/tests/sprint-1/auth.api.test.ts` (TEST-01, TEST-02), `authorization.api.test.ts` | ✅ PASS |
+| **Logout** | `POST /api/auth/logout` | 401 | Allowed | Allowed | Invalidates acting session in database and clears `sid` cookie | `server/tests/sprint-1/auth.api.test.ts` (TEST-04), `authorization.api.test.ts` | ✅ PASS |
+| **Get Current User** | `GET /api/auth/me` | 401 | Allowed | Allowed | Reads acting user profile without password hash; rejects missing, forged, expired or deactivated session | `server/tests/sprint-1/auth.api.test.ts` (TEST-03), `authorization.api.test.ts` | ✅ PASS |
+| **Browse Catalog** | `GET /api/products` | Allowed | Allowed | Allowed | Public access; strictly returns active items (`isActive = true`) with integer `priceMinor` | `server/tests/sprint-1/catalog.api.test.ts` (TEST-05) | ✅ PASS |
+| **Place Order** | `POST /api/orders` | 401 | **Allowed** | 403 | Bound to acting `session.userId`; server authoritative pricing; atomic stock decrement; Operator receives 403 | `server/tests/sprint-1/orders-create.api.test.ts` (TEST-07..TEST-12), `authorization.api.test.ts` | ✅ PASS |
+| **List My Orders** | `GET /api/orders` | 401 | **Allowed** | 403 | Strict filter: `customerId == userId`, sorted newest first; Operator receives 403 | `server/tests/sprint-1/orders-access.api.test.ts` (TEST-13), `authorization.api.test.ts` | ✅ PASS |
+| **View Order Detail** | `GET /api/orders/:id` | 401 | **Conditional** | **Allowed** | Customer: own order only (else 404 Not Found without leak); Operator: any store order | `server/tests/sprint-1/orders-access.api.test.ts` (TEST-15), `authorization.api.test.ts` | ✅ PASS |
+| **List Incoming Orders** | `GET /api/operator/orders` | 401 | 403 | **Allowed** | Operator only; chronological `PLACED` queue; Customer receives 403 | `server/tests/sprint-1/operator-orders.api.test.ts` (TEST-16, TEST-17), `authorization.api.test.ts` | ✅ PASS |
+| **Accept Order** | `PATCH /api/operator/orders/:id/accept` | 401 | 403 | **Allowed** | Operator only; transitions `PLACED -> ACCEPTED`; Customer receives 403; non-PLACED receives 409 Conflict | `server/tests/sprint-1/operator-orders.api.test.ts` (TEST-16, TEST-19, TEST-20), `authorization.api.test.ts` | ✅ PASS |
+
