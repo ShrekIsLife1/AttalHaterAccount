@@ -184,3 +184,44 @@ export async function getOrderById(id: number): Promise<Order> {
 
   return data.order;
 }
+
+/**
+ * Fetch incoming orders queue for operators
+ * F-05 / AC-14 / TEST-17
+ */
+export async function getOperatorOrders(): Promise<Order[]> {
+  const response = await fetch(`${API_BASE_URL}/api/operator/orders`, {
+    method: "GET",
+    credentials: "include"
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to fetch operator orders");
+  }
+
+  return Array.isArray(data) ? data : data.orders || [];
+}
+
+/**
+ * Accept a placed order as operator
+ * F-05 / AC-15, AC-16 / TEST-19, TEST-20
+ */
+export async function acceptOrder(id: number): Promise<Order> {
+  const response = await fetch(`${API_BASE_URL}/api/operator/orders/${id}/accept`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include"
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to accept order");
+  }
+
+  return data.order;
+}

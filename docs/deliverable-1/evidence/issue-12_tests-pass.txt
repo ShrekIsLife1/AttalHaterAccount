@@ -1,0 +1,44 @@
+
+> unimerch-server@1.0.0 test
+> vitest run sprint-1/operator-orders
+
+
+ RUN  v2.1.9 /home/lapulga/Documents/cours/Thailande/SWE/lab duo/AttalHaterAccount/server
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 401 Unauthorized when unauthenticated for GET and PATCH
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 403 Forbidden when a CUSTOMER attempts to access GET /api/operator/orders
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 403 Forbidden when a CUSTOMER attempts to call PATCH /api/operator/orders/:id/accept
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > allows authenticated OPERATOR to access GET /api/operator/orders
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-17: Operator Orders Queue Listing (AC-14 / FR-09) > returns only PLACED orders, ordered chronologically (oldest first: createdAt ASC)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-19: Single-Step Acceptance Transition (AC-15 / BR-04 / FR-10) > transitions order status from PLACED to ACCEPTED, records acceptedAt and acceptedByOperatorId
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 409 Conflict when attempting to accept an already ACCEPTED order
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 404 Not Found when order ID does not exist
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 400 Bad Request when order ID is not a valid number
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/operator-orders.api.test.ts (9 tests) 1301ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  17:43:20
+   Duration  1.94s (transform 181ms, setup 0ms, collect 388ms, tests 1.30s, environment 0ms, prepare 46ms)
+

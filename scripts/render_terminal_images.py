@@ -215,4 +215,29 @@ ui_lines = [
 ]
 render_terminal("Terminal — Vitest Customer Ordering UI Suite (F-02, F-03, F-04 / TEST-06, TEST-14)", ui_lines, "docs/deliverable-1/evidence/issue-11_customer-ordering-ui-tests.png")
 
+# 7. Operator Orders Queue & Acceptance Suite (F-05 / AC-13..AC-16 / TEST-16..TEST-20)
+operator_lines = [
+    ("$ cd server && npm test -- sprint-1/operator-orders", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/operator-orders", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/operator-orders.api.test.ts (9 tests) 1301ms", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection - returns HTTP 401 when unauthenticated", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection - returns HTTP 403 when CUSTOMER accesses GET /api/operator/orders", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection - returns HTTP 403 when CUSTOMER calls PATCH /api/operator/orders/:id/accept", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection - allows authenticated OPERATOR to access GET /api/operator/orders", "#27c93f"),
+    ("   ✓ TEST-17: Operator Queue - returns only PLACED orders, ordered chronologically (createdAt ASC)", "#27c93f"),
+    ("   ✓ TEST-19: Single-Step Acceptance - transitions PLACED to ACCEPTED, records acceptedAt and operatorId", "#27c93f"),
+    ("   ✓ TEST-20: State Conflict Guard - returns HTTP 409 Conflict when accepting already ACCEPTED order", "#27c93f"),
+    ("   ✓ TEST-20: State Conflict Guard - returns HTTP 404 Not Found when order ID does not exist", "#27c93f"),
+    ("   ✓ TEST-20: State Conflict Guard - returns HTTP 400 Bad Request when order ID is not a valid number", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  1 passed (1)", "#27c93f"),
+    ("      Tests  9 passed (9)", "#27c93f"),
+    ("   Duration  1.94s (transform 181ms, setup 0ms, collect 388ms, tests 1.30s)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Operator Orders & Acceptance Suite (F-05 / AC-13..AC-16 / TEST-16..TEST-20)", operator_lines, "docs/deliverable-1/evidence/issue-12_operator_test.png")
+
+
 

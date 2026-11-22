@@ -1,0 +1,228 @@
+
+> unimerch-server@1.0.0 test
+> vitest run sprint-1/operator-orders
+
+
+ RUN  v2.1.9 /home/lapulga/Documents/cours/Thailande/SWE/lab duo/AttalHaterAccount/server
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 401 Unauthorized when unauthenticated for GET and PATCH
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 403 Forbidden when a CUSTOMER attempts to access GET /api/operator/orders
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 403 Forbidden when a CUSTOMER attempts to call PATCH /api/operator/orders/:id/accept
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > allows authenticated OPERATOR to access GET /api/operator/orders
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-17: Operator Orders Queue Listing (AC-14 / FR-09) > returns only PLACED orders, ordered chronologically (oldest first: createdAt ASC)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-19: Single-Step Acceptance Transition (AC-15 / BR-04 / FR-10) > transitions order status from PLACED to ACCEPTED, records acceptedAt and acceptedByOperatorId
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 409 Conflict when attempting to accept an already ACCEPTED order
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 404 Not Found when order ID does not exist
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 400 Bad Request when order ID is not a valid number
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ❯ tests/sprint-1/operator-orders.api.test.ts (9 tests | 9 failed) 1299ms
+   × Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 401 Unauthorized when unauthenticated for GET and PATCH 105ms
+     → expected 404 to be 401 // Object.is equality
+   × Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 403 Forbidden when a CUSTOMER attempts to access GET /api/operator/orders 97ms
+     → expected 404 to be 403 // Object.is equality
+   × Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 403 Forbidden when a CUSTOMER attempts to call PATCH /api/operator/orders/:id/accept 102ms
+     → expected 404 to be 403 // Object.is equality
+   × Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > allows authenticated OPERATOR to access GET /api/operator/orders 93ms
+     → expected 404 to be 200 // Object.is equality
+   × Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-17: Operator Orders Queue Listing (AC-14 / FR-09) > returns only PLACED orders, ordered chronologically (oldest first: createdAt ASC) 125ms
+     → expected 404 to be 200 // Object.is equality
+   × Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-19: Single-Step Acceptance Transition (AC-15 / BR-04 / FR-10) > transitions order status from PLACED to ACCEPTED, records acceptedAt and acceptedByOperatorId 105ms
+     → expected 404 to be 200 // Object.is equality
+   × Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 409 Conflict when attempting to accept an already ACCEPTED order 92ms
+     → expected 404 to be 409 // Object.is equality
+   × Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 404 Not Found when order ID does not exist 103ms
+     → expected {} to have property "error"
+   × Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 400 Bad Request when order ID is not a valid number 87ms
+     → expected 404 to be 400 // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 401 Unauthorized when unauthenticated for GET and PATCH
+AssertionError: expected 404 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 404
+
+ ❯ tests/sprint-1/operator-orders.api.test.ts:65:29
+     63|     it("returns HTTP 401 Unauthorized when unauthenticated for GET and…
+     64|       const getRes = await request(app).get("/api/operator/orders");
+     65|       expect(getRes.status).toBe(401);
+       |                             ^
+     66| 
+     67|       const patchRes = await request(app).patch("/api/operator/orders/…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 403 Forbidden when a CUSTOMER attempts to access GET /api/operator/orders
+AssertionError: expected 404 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 404
+
+ ❯ tests/sprint-1/operator-orders.api.test.ts:76:26
+     74|         .set("Cookie", customerCookie);
+     75| 
+     76|       expect(res.status).toBe(403);
+       |                          ^
+     77|       expect(res.body).toHaveProperty("error");
+     78|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > returns HTTP 403 Forbidden when a CUSTOMER attempts to call PATCH /api/operator/orders/:id/accept
+AssertionError: expected 404 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 404
+
+ ❯ tests/sprint-1/operator-orders.api.test.ts:85:26
+     83|         .set("Cookie", customerCookie);
+     84| 
+     85|       expect(res.status).toBe(403);
+       |                          ^
+     86|       expect(res.body).toHaveProperty("error");
+     87|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-16: RBAC Protection on Operator Endpoints (AC-13 / BR-08) > allows authenticated OPERATOR to access GET /api/operator/orders
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ tests/sprint-1/operator-orders.api.test.ts:94:26
+     92|         .set("Cookie", operator1Cookie);
+     93| 
+     94|       expect(res.status).toBe(200);
+       |                          ^
+     95|       expect(Array.isArray(res.body)).toBe(true);
+     96|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-17: Operator Orders Queue Listing (AC-14 / FR-09) > returns only PLACED orders, ordered chronologically (oldest first: createdAt ASC)
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ tests/sprint-1/operator-orders.api.test.ts:145:26
+    143|         .set("Cookie", operator1Cookie);
+    144| 
+    145|       expect(res.status).toBe(200);
+       |                          ^
+    146|       expect(Array.isArray(res.body)).toBe(true);
+    147| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-19: Single-Step Acceptance Transition (AC-15 / BR-04 / FR-10) > transitions order status from PLACED to ACCEPTED, records acceptedAt and acceptedByOperatorId
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ tests/sprint-1/operator-orders.api.test.ts:187:26
+    185|         .set("Cookie", operator1Cookie);
+    186| 
+    187|       expect(res.status).toBe(200);
+       |                          ^
+    188|       expect(res.body).toHaveProperty("order");
+    189|       const updated = res.body.order;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+ FAIL  tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 409 Conflict when attempting to accept an already ACCEPTED order
+AssertionError: expected 404 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 404
+
+ ❯ tests/sprint-1/operator-orders.api.test.ts:230:26
+    228|         .set("Cookie", operator2Cookie);
+    229| 
+    230|       expect(res.status).toBe(409);
+       |                          ^
+    231|       expect(res.body).toHaveProperty("error");
+    232|       expect(res.body.error).toMatch(/cannot be accepted|already accep…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
+
+ FAIL  tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 404 Not Found when order ID does not exist
+AssertionError: expected {} to have property "error"
+ ❯ tests/sprint-1/operator-orders.api.test.ts:247:24
+    245| 
+    246|       expect(res.status).toBe(404);
+    247|       expect(res.body).toHaveProperty("error");
+       |                        ^
+    248|       expect(res.body.error).toMatch(/Order not found/i);
+    249|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
+
+ FAIL  tests/sprint-1/operator-orders.api.test.ts > Operator Order Queue & Single-Step Acceptance (F-05 / AC-13..AC-16 / TEST-16, TEST-17, TEST-19, TEST-20) > TEST-20: State Machine Conflict Guard & 404 on Invalid Acceptance (AC-16 / BR-04) > returns HTTP 400 Bad Request when order ID is not a valid number
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ tests/sprint-1/operator-orders.api.test.ts:256:26
+    254|         .set("Cookie", operator1Cookie);
+    255| 
+    256|       expect(res.status).toBe(400);
+       |                          ^
+    257|       expect(res.body).toHaveProperty("error");
+    258|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯
+
+ Test Files  1 failed (1)
+      Tests  9 failed (9)
+   Start at  17:40:20
+   Duration  1.95s (transform 185ms, setup 0ms, collect 396ms, tests 1.30s, environment 0ms, prepare 54ms)
+
