@@ -21,6 +21,7 @@ images = {
     "ui": "docs/deliverable-1/evidence/issue-11_customer-ordering-ui-tests.png",
     "operator": "docs/deliverable-1/evidence/issue-12_operator_test.png",
     "auth_hardening": "docs/deliverable-1/evidence/issue-13_authorization_test.png",
+    "e2e": "docs/deliverable-1/evidence/issue-14_e2e_test.png",
 }
 
 img_data = {}
@@ -329,8 +330,22 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.9 Program Demonstrations (Scenarios S1 to S10)</text:p>
-   <table:table table:name="BoxF9">
+   <text:p text:style-name="SubsectionTitle">F.9 End-to-End Complete Workflow Suite (Issue #14 / AC-19, AC-20 / TEST-24..26)</text:p>
+   <table:table table:name="BoxF9a">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">
+       <draw:frame draw:name="E2EWorkflowTest" text:anchor-type="as-char" svg:width="16.5cm" svg:height="9.0cm">
+        <draw:image xlink:href="Pictures/issue-14_e2e_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+       </draw:frame>
+      </text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+
+   <text:p text:style-name="SubsectionTitle">F.10 Program Demonstrations (Scenarios S1 to S10)</text:p>
+   <table:table table:name="BoxF10a">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
@@ -339,8 +354,8 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.10 Engineering Workflow &amp; Contribution History</text:p>
-   <table:table table:name="BoxF10">
+   <text:p text:style-name="SubsectionTitle">F.11 Engineering Workflow &amp; Contribution History</text:p>
+   <table:table table:name="BoxF11">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
