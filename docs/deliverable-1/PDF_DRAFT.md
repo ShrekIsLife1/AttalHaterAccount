@@ -375,7 +375,7 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 ### F.2 Program demonstrations   (release commit: <RELEASE_COMMIT>)
 | # | Scenario | Feature/AC | Role | Start conditions | Steps | Expected | Actual | Evidence file | Status | Issue |
 |---|---|---|---|---|---|---|---|---|---|---|
-| S1 | Login | AC-01, AC-18 | Customer | Seeded DB | `POST /api/auth/login` with valid email & password | HTTP 200, sets `sid` cookie, returns profile without hash | Verified via Supertest suite | `docs/deliverable-1/evidence/issue-07_auth_test.png` | ✅ | #7, #8 |
+| S1 | Login | AC-01, AC-18 | Customer | Seeded DB | `POST /api/auth/login` and React Login UI form submission | HTTP 200, sets `sid` cookie, renders role-appropriate navigation (Customer sees Catalog & My Orders; Operator sees Incoming Orders) | Verified via Vitest suite (6 tests pass) & Supertest suite | `docs/deliverable-1/evidence/issue-08_AC-18_login-ui-tests.txt` | ✅ | #7, #8 |
 | S2 | Normal order journey + persisted retrieval | AC-05, AC-06, AC-11 | Customer | | | | | | ⬜ | #10, #11 |
 | S3 | DB proof | AC-06, AC-10 | — | | | | | | ⬜ | #10 |
 | S4 | Rule rejection | AC-08, AC-09 | Customer | | | | | | ⬜ | #10 |
@@ -386,8 +386,8 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 | S9 | Unauthenticated access | AC-03 | — | No session cookie | `GET /api/auth/me` without cookie | HTTP 401 Unauthorized with safe error | Verified via Supertest suite | `docs/deliverable-1/evidence/issue-07_auth_test.png` | ✅ | #7, #13 |
 | S10 | Logout | AC-04 | Customer | Active session | `POST /api/auth/logout` followed by `/me` | HTTP 200, clears `sid`, subsequent `/me` gives 401 | Verified via Supertest suite | `docs/deliverable-1/evidence/issue-07_auth_test.png` | ✅ | #7 |
 ### F.3 Build and automated test results
-- Commands and tested commit: `npm test` (Vitest v2.1.9)
-- Passed / failed / skipped counts: 17 passed, 0 failed, 1 skipped (health: 1, persistence: 4, auth: 12)
+- Commands and tested commit: `npm test` (Vitest v2.1.9 on client and server)
+- Passed / failed / skipped counts: 23 passed, 0 failed, 1 skipped (server: 17 passed, client: 6 passed)
 | AC | Planned TEST | Actual test file / name | Level | Result | Issue |
 |---|---|---|---|---|---|
 | **AC-01** | TEST-01 | `server/tests/sprint-1/auth.api.test.ts` (Valid login: customer & operator, HttpOnly sid cookie, safe payload) | API | ✅ PASS (2/2) | #7 |
@@ -396,6 +396,7 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 | **AC-04** | TEST-04 | `server/tests/sprint-1/auth.api.test.ts` (Logout & invalidation: cookie clear, DB session deletion, subsequent 401) | API | ✅ PASS (1/1) | #7 |
 | **AC-13** | TEST-16 | `server/tests/sprint-1/auth.api.test.ts` (RBAC protection: unauth 401, customer forbidden 403, operator allowed 200) | API | ✅ PASS (3/3) | #7 |
 | **AC-17** | TEST-21 | `server/tests/sprint-1/persistence.api.test.ts` (idempotent seed, relational persistence, schema validation) | Persistence | ✅ PASS (4/4) | #6 |
+| **AC-18** | TEST-22, TEST-23 | `client/tests/sprint-1/Login.test.tsx` (Login form, busy state, generic error, role-based nav, logout) | UI | ✅ PASS (6/6) | #8 |
 - Excerpt 1 (domain rule): ⬜ (#10)
 - Excerpt 2 (ownership restriction): ⬜ (#13)
 - TDD evidence (failing → passing, commit hashes):
@@ -412,7 +413,8 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 | #4 | Part D — Three-sprint plan (roadmap table, feature allocation, feasibility) | `issue/04-sprint-plan` | Ba | Cl | Reviewed 3-sprint plan, confirmed feature coverage and Sprint 1 feasibility | PR #9 (merged) | via release PR |
 | #5 | Part E — Sprint 1 engineering contracts (F-01…F-05, STS TEST-01…26, DoD) | `issue/05-sprint1-contracts` | Ba | Cl | Reviewed feature contracts, STS matrix (TEST-01..26), and DoD | PR #12 (merged) | via release PR |
 | #6 | AC-17 (Scaffold, PostgreSQL schema, migrations, idempotent seed, persistence test) | `issue/06-scaffold-db-seed` | Cl | Ba | Reviewed Prisma schema, migration 20261122000000_init, seed idempotency, and persistence test suite | PR #14 (merged) | via release PR |
-| #7 | F-01 / AC-01..AC-04, AC-13 (Session authentication, login, logout, me, and RBAC middleware) | `issue/07-auth-session-rbac` | Cl | Ba | Reviewed session authentication, bcrypt verification, HttpOnly cookie lifecycle, and RBAC middleware | PR (pending) | via release PR |
+| #7 | F-01 / AC-01..AC-04, AC-13 (Session authentication, login, logout, me, and RBAC middleware) | `issue/07-auth-session-rbac` | Cl | Ba | Reviewed session authentication, bcrypt verification, HttpOnly cookie lifecycle, and RBAC middleware | PR #16 (merged) | via release PR |
+| #8 | F-01 / AC-18 (Login UI, busy state, generic error, role-conditional navigation, and session clearing on logout) | `feature/08-login-ui` | Ba | Cl | (Pending PR review) | PR (pending) | via release PR |
 
 History sequence (contract → tests → implementation):
 | Date | Commit | What |
@@ -426,16 +428,17 @@ History sequence (contract → tests → implementation):
 | 2026-11-22 | `79fd61d` | feat: issue #6 - scaffold, database schema, Prisma migrations, idempotent seed, and persistence tests |
 | 2026-11-22 | `cdc98d8` | test: issue #7 - add failing API integration tests for authentication and session lifecycle (TEST-01..TEST-04) |
 | 2026-11-22 | `d44cba7` | feat: issue #7 - implement session authentication, login, logout, me, and RBAC middleware |
+| 2026-11-22 | `pending` | feat: issue #8 - implement login UI, auth context, role-conditional navigation, and vitest suite |
 
 Board status screenshot: ⬜ (#15)   Release PR / tag: ⬜ (#15)
 ### F.5 Contributions, AI use, limitations
 | Student | Issues/PRs authored | PRs reviewed | Pair work |
 |---|---|---|---|
-| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS), #6 (Database scaffold, migrations, seed & persistence), #7 (Backend auth, session & RBAC middleware) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewed Engineering contracts) | Architecture & domain design alignment, schema validation |
-| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8), #6 (Reviewed PR #14), #7 (Reviewing Auth & RBAC) | Architecture & domain design alignment, schema validation |
+| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS), #6 (Database scaffold, migrations, seed & persistence), #7 (Backend auth, session & RBAC middleware) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewed Engineering contracts), #8 (Reviewing Login UI) | Architecture & domain design alignment, schema validation |
+| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS), #8 (Login UI & Authenticated Shell) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8), #6 (Reviewed PR #14), #7 (Reviewed PR #16) | Architecture & domain design alignment, schema validation |
 
 AI-use declaration:
-- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Assisted Ba with establishing the three-sprint roadmap, drafting `docs/sprints/plan.md`, formatting the dependency graph, and documenting Part D in `PDF_DRAFT.md` (`#4`). Assisted Ba with writing feature engineering contracts (`F-01` to `F-05`), compiling the complete Software Test Specification (`TEST-01` to `TEST-26`), establishing the Product Definition of Done, and documenting Part E in `PDF_DRAFT.md` (`#5`). Assisted Cl with configuring Prisma ORM, authoring migrations and idempotent seed scripts, and implementing persistence test suite for AC-17 (`#6`). Assisted Cl with TDD test authoring (TEST-01..04, TEST-16), session management implementation with SHA-256 token hashing, HttpOnly cookie lifecycle, and RBAC middleware for F-01 (`#7`). Reviewed and verified by Ba and Cl.
+- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Assisted Ba with establishing the three-sprint roadmap, drafting `docs/sprints/plan.md`, formatting the dependency graph, and documenting Part D in `PDF_DRAFT.md` (`#4`). Assisted Ba with writing feature engineering contracts (`F-01` to `F-05`), compiling the complete Software Test Specification (`TEST-01` to `TEST-26`), establishing the Product Definition of Done, and documenting Part E in `PDF_DRAFT.md` (`#5`). Assisted Cl with configuring Prisma ORM, authoring migrations and idempotent seed scripts, and implementing persistence test suite for AC-17 (`#6`). Assisted Cl with TDD test authoring (TEST-01..04, TEST-16), session management implementation with SHA-256 token hashing, HttpOnly cookie lifecycle, and RBAC middleware for F-01 (`#7`). Assisted Ba with developing the React authentication context (`AuthContext.tsx`), Login component with busy indicator and generic error handling (`Login.tsx`), role-segregated navigation bar (`Navbar.tsx`), and automated component testing in Vitest (`Login.test.tsx`) for Issue #8. Reviewed and verified by Ba and Cl.
 
 Known limitations / incomplete work / skipped tests:
 - None for Part A, Part B, Part C, Part D, Part E specifications, Part F.1 persistence foundation, or Part F.3 authentication suite.
