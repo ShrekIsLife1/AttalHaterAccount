@@ -1,0 +1,13 @@
+=== SEED RUN 1 ===
+
+> unimerch-server@1.0.0 seed
+> tsx prisma/seed.ts
+
+Seeding completed successfully: 5 users and 8 products upserted.
+
+=== SEED RUN 2 (IDEMPOTENCY CHECK) ===
+
+> unimerch-server@1.0.0 seed
+> tsx prisma/seed.ts
+
+Seeding completed successfully: 5 users and 8 products upserted.

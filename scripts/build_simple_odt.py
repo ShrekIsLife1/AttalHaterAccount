@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate ultra-simple deliverable-1.odt matching exactly the Lab 3 report style:
+Generate ultra-simple deliverable-1.odt matching strictly the Lab 3 report style:
 - Clean minimal text
 - Direct GitHub links
 - Framed dashed boxes for links and embedded screenshots
@@ -12,6 +12,8 @@ odt_path = "docs/deliverable-1/deliverable-1.odt"
 # Images to embed
 img_arch = "docs/deliverable-1/evidence/issue-03_architecture-diagram.png"
 img_er = "docs/deliverable-1/evidence/issue-03_er-diagram.png"
+img_seed = "docs/deliverable-1/evidence/issue-06_seed_terminal.png"
+img_pers = "docs/deliverable-1/evidence/issue-06_persistence_test.png"
 
 with open(img_arch, "rb") as f:
     arch_bytes = f.read()
@@ -19,7 +21,12 @@ with open(img_arch, "rb") as f:
 with open(img_er, "rb") as f:
     er_bytes = f.read()
 
-# Build manifest.xml
+with open(img_seed, "rb") as f:
+    seed_bytes = f.read()
+
+with open(img_pers, "rb") as f:
+    pers_bytes = f.read()
+
 manifest_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.3">
  <manifest:file-entry manifest:full-path="/" manifest:version="1.3" manifest:media-type="application/vnd.oasis.opendocument.text"/>
@@ -28,6 +35,8 @@ manifest_xml = """<?xml version="1.0" encoding="UTF-8"?>
  <manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>
  <manifest:file-entry manifest:full-path="Pictures/issue-03_architecture-diagram.png" manifest:media-type="image/png"/>
  <manifest:file-entry manifest:full-path="Pictures/issue-03_er-diagram.png" manifest:media-type="image/png"/>
+ <manifest:file-entry manifest:full-path="Pictures/issue-06_seed_terminal.png" manifest:media-type="image/png"/>
+ <manifest:file-entry manifest:full-path="Pictures/issue-06_persistence_test.png" manifest:media-type="image/png"/>
 </manifest:manifest>
 """
 
@@ -35,7 +44,7 @@ meta_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <office:document-meta xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" office:version="1.3">
  <office:meta>
   <dc:title>Project Deliverable 1 — UniMerch Store</dc:title>
-  <dc:creator>Clément Dominique Delrieu</dc:creator>
+  <dc:creator>Clément Dominique Delrieu &amp; Baptiste Carré</dc:creator>
  </office:meta>
 </office:document-meta>
 """
@@ -93,11 +102,8 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
    <style:table-cell-properties fo:background-color="#fafafa" fo:padding="12pt" fo:border="1pt dashed #999999"/>
   </style:style>
   <style:style style:name="BoxText" style:family="paragraph">
-   <style:paragraph-properties fo:text-align="center" fo:margin-bottom="0pt"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-bottom="4pt"/>
    <style:text-properties fo:font-size="9.5pt" fo:color="#0056b3"/>
-  </style:style>
-  <style:style style:name="ImgFrame" style:family="graphic">
-   <style:graphic-properties style:horizontal-pos="center" style:horizontal-rel="paragraph"/>
   </style:style>
  </office:automatic-styles>
  <office:body>
@@ -179,7 +185,7 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <!-- PLACEHOLDERS FOR D, E, F -->
+   <!-- ANSWER PART D -->
    <text:p text:style-name="SectionTitle">Answer Part D — Three-Sprint Plan (5 pts)</text:p>
    <text:p text:style-name="LinkLabel">Link to docs/sprints/plan.md: ___________________________________________________</text:p>
    <text:p text:style-name="SubsectionTitle">D.1 Rendered plan.md — Sprint Goals, Feature Allocation &amp; Feasibility</text:p>
@@ -187,40 +193,58 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
-      <text:p text:style-name="BoxText">[Issue #4 — Link to docs/sprints/plan.md]</text:p>
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/plan.md</text:p>
      </table:table-cell>
     </table:table-row>
    </table:table>
 
+   <!-- ANSWER PART E -->
    <text:p text:style-name="SectionTitle">Answer Part E — Sprint 1 Engineering Contracts (20 pts)</text:p>
    <text:p text:style-name="LinkLabel">Link to docs/sprints/sprint-1/: _________________________________________________</text:p>
-   <text:p text:style-name="SubsectionTitle">E.1 Rendered Feature Contracts (F-01…F-05) &amp; STS Table</text:p>
+   <text:p text:style-name="SubsectionTitle">E.1 Rendered Feature Contracts (F-01…F-05), STS Table &amp; Definition of Done</text:p>
    <table:table table:name="BoxE">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
-      <text:p text:style-name="BoxText">[Issue #5 — Link to docs/sprints/sprint-1/]</text:p>
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/F-01-authentication.md</text:p>
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/F-02-catalog.md</text:p>
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/F-03-place-order.md</text:p>
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/F-04-my-orders.md</text:p>
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/F-05-operator-orders.md</text:p>
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/sts.md</text:p>
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/definition-of-done.md</text:p>
      </table:table-cell>
     </table:table-row>
    </table:table>
 
+   <!-- ANSWER PART F -->
    <text:p text:style-name="SectionTitle">Answer Part F — Working Sprint 1 and Verification (20 pts)</text:p>
-   <text:p text:style-name="SubsectionTitle">F.1 Git Workflow &amp; Project Board</text:p>
+   <text:p text:style-name="LinkLabel">Link to README.md setup guide: __________________________________________________</text:p>
+   
+   <text:p text:style-name="SubsectionTitle">F.1 Database Scaffold &amp; Idempotent Seeding Execution (Issue #6 / AC-17)</text:p>
    <table:table table:name="BoxF1">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
-      <text:p text:style-name="BoxText">[Screenshot: Commit history on sprint1-staging &amp; GitHub Project Board]</text:p>
+      <text:p text:style-name="BoxText">
+       <draw:frame draw:name="SeedTerminal" text:anchor-type="as-char" svg:width="16.5cm" svg:height="6.8cm">
+        <draw:image xlink:href="Pictures/issue-06_seed_terminal.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+       </draw:frame>
+      </text:p>
      </table:table-cell>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.2 Automated Test Suite Results</text:p>
+   <text:p text:style-name="SubsectionTitle">F.2 Automated Persistence &amp; Database Integrity Suite (AC-17 / TEST-21)</text:p>
    <table:table table:name="BoxF2">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
-      <text:p text:style-name="BoxText">[Terminal screenshots: Backend vitest run &amp; Frontend test run]</text:p>
+      <text:p text:style-name="BoxText">
+       <draw:frame draw:name="PersistenceTestTerminal" text:anchor-type="as-char" svg:width="16.5cm" svg:height="8.4cm">
+        <draw:image xlink:href="Pictures/issue-06_persistence_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+       </draw:frame>
+      </text:p>
      </table:table-cell>
     </table:table-row>
    </table:table>
@@ -230,7 +254,18 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
-      <text:p text:style-name="BoxText">[Screenshots S1 to S10: Login, Catalog, Cart/Checkout, My Orders, Operator Queue, Order Accept, 409 guard, 403/404 restrictions]</text:p>
+      <text:p text:style-name="BoxText">[Working UI Scenarios S1 to S10: Login, Catalog, Cart/Checkout, My Orders, Operator Queue, Order Accept, 409 guard, 403/404 restrictions]</text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+
+   <text:p text:style-name="SubsectionTitle">F.4 Engineering Workflow &amp; Contribution History</text:p>
+   <table:table table:name="BoxF4">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/pulls?q=is%3Apr</text:p>
+      <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/commits/sprint1-staging</text:p>
      </table:table-cell>
     </table:table-row>
    </table:table>
@@ -240,7 +275,6 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
 </office:document-content>
 """
 
-# Write ODT archive
 with zipfile.ZipFile(odt_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
     z.writestr("mimetype", "application/vnd.oasis.opendocument.text", compress_type=zipfile.ZIP_STORED)
     z.writestr("META-INF/manifest.xml", manifest_xml)
@@ -249,5 +283,7 @@ with zipfile.ZipFile(odt_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
     z.writestr("content.xml", content_xml)
     z.writestr("Pictures/issue-03_architecture-diagram.png", arch_bytes)
     z.writestr("Pictures/issue-03_er-diagram.png", er_bytes)
+    z.writestr("Pictures/issue-06_seed_terminal.png", seed_bytes)
+    z.writestr("Pictures/issue-06_persistence_test.png", pers_bytes)
 
 print(f"Generated ultra-simple Lab 3 report at {odt_path}")
