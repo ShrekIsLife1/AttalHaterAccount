@@ -252,7 +252,35 @@ All endpoints communicate via JSON over HTTPS. Authenticated requests pass crede
 - **Environment Variables:** `PORT`, `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGIN`, `NODE_ENV`. Documented with clean placeholders in `.env.example`. No secrets committed.
 - **Docker Suitability:** Multi-stage Dockerfile builds compiled JavaScript/CSS and executes lightweight production Node runtime.
 - **Planned GCP Deployment (Lab 5 Readiness):** Backend container hosted on Google Cloud Run; relational database hosted on managed Google Cloud SQL (PostgreSQL); secrets managed securely via Google Secret Manager.
-## Part D — Three-sprint plan   ⬜ (#4)
+## Part D — Three-sprint plan   ✅ (#4)
+
+### D.1 Three-Sprint Allocation Table
+
+| Sprint | Checkpoint Date | Sprint Goal | Scope (Feature IDs) | Dependencies | Target Outcome / Deliverables |
+|---|---|---|---|---|---|
+| **Sprint 1** | **8 Nov 2026** | **Baseline Working Slice & Contracts:** Establish foundational security, relational data persistence, authoritative catalog, atomic multi-line order placement, and single-step operator acceptance. | • **F-01:** Session Auth & RBAC (`CUSTOMER`, `OPERATOR`)<br>• **F-02:** Authoritative Catalog & Live Stock<br>• **F-03:** Multi-Item Order Creation, Server Pricing & Atomic Decrement<br>• **F-04:** Customer Order History & Ownership Isolation<br>• **F-05:** Operator Order Queue & State Transition (`PLACED -> ACCEPTED`) | Base scaffold, PostgreSQL DB, idempotent seed script | **Working increment on `main`:**<br>- Verified session auth (bcrypt, HttpOnly cookie)<br>- Authoritative catalog with satang minor units<br>- Atomic order creation with transactional rollback on stockout<br>- Customer data isolation (HTTP 404 cross-access)<br>- Operator acceptance queue & transition<br>- Automated integration test suite (STS)<br>- Deliverable 1 PDF / ODT |
+| **Sprint 2** | **29 Nov 2026** | **Core Operational Expansion:** Equip store operators with catalog/stock controls, implement cancellation/rejection with automatic inventory rollback, and support the multi-stage counter pickup lifecycle. | • **F-06:** Operator Catalog & Stock Management<br>• **F-07:** Customer Cancellation & Operator Rejection with Stock Rollback<br>• **F-08:** Extended Fulfillment Lifecycle (`ACCEPTED -> PREPARING -> READY -> COMPLETED`)<br>• **F-09:** Simulated Payment & Digital Counter Receipt | Sprint 1 baseline (`F-01`..`F-05`), transactional persistence | **Sprint 2 increment:**<br>- Operator back-office catalog CRUD<br>- Multi-stage state machine transitions with 409 conflict guards<br>- Automated inventory restitution on cancel/reject<br>- Simulated payment records & digital pickup receipts<br>- Deliverable 2 report |
+| **Sprint 3** | **Progress: 29 Nov 2026<br>Complete: 13 Dec 2026** | **Operational Analytics & System Hardening:** Deliver store analytics dashboards, full-text product search, order filtering, responsive UI verification, and latency benchmarks. | • **F-10:** Operator Metrics & Sales Dashboard<br>• **F-11:** Advanced Search, Filtering & Categorization<br>• **F-12:** System Hardening, Responsive Viewports & Performance Tuning | Sprints 1 & 2 data models, Playwright responsive viewport harness | **Final Release package:**<br>- Sales & order metrics dashboard<br>- Full-text search and multi-criteria order filter<br>- Responsive layout verified across mobile (375px), tablet (768px), and desktop (1920px)<br>- Order creation latency $< 1000\text{ ms}$<br>- Full regression suite passing<br>- Final Delivery package |
+
+### D.2 Feature Allocation & Inter-Feature Dependencies
+- **Strict Sprint Allocation:** Every feature from `docs/features.md` appears in exactly one sprint:
+  - Sprint 1 (5 features): `F-01`, `F-02`, `F-03`, `F-04`, `F-05`
+  - Sprint 2 (4 features): `F-06`, `F-07`, `F-08`, `F-09`
+  - Sprint 3 (3 features): `F-10`, `F-11`, `F-12`
+- **Dependency Flow:**
+  - `F-01` provides foundational authentication and role enforcement for all protected routes.
+  - `F-02` feeds catalog stock and authoritative pricing into `F-03`.
+  - `F-03` generates orders consumed by `F-04` (customer history) and `F-05` (operator queue).
+  - Sprint 2 features (`F-06`..`F-09`) and Sprint 3 features (`F-10`..`F-12`) extend these core transactional tables without requiring destructive schema rewrites.
+
+### D.3 Feasibility Justification for Sprint 1
+The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasible within the allocated timeframe**:
+1. **Vertical Slice Focus:** Rather than building broad, shallow features across all actors, Sprint 1 implements a single complete vertical journey through the full stack (React UI $\rightarrow$ Express API $\rightarrow$ PostgreSQL database) from customer login to order acceptance.
+2. **Explicit Scope Exclusions (Zero External Bottlenecks):** By formally excluding live payment gateways (Stripe/PayPal), external courier tracking APIs, and external email/SMS providers, the team eliminates third-party dependencies, webhook latency, and asynchronous failure modes.
+3. **Pre-Built Architectural Foundation:** Utilizing Express/Node, React/Vite, and Prisma ORM against a local PostgreSQL database enables rapid local iteration, automatic end-to-end TypeScript type safety, and automated test execution with Supertest and Vitest.
+4. **Deterministic Seed Data:** Pre-configured, bcrypt-hashed demo accounts ($\ge 3$ customers, $\ge 2$ operators) and catalog products allow clean-room automated test execution without relying on complex user registration workflows.
+5. **Balanced Duo Workload:** The 15 granular issues are evenly split between Student Cl (8 issues) and Student Ba (7 issues), allowing parallel development paths (e.g., Ba drafting contracts and frontend tests while Cl builds authentication) without development bottlenecks.
+
 ## Part E — Sprint 1 engineering contracts   ⬜ (#5)
 
 ## Part F — Working Sprint 1 and verification
@@ -284,7 +312,8 @@ All endpoints communicate via JSON over HTTPS. Authenticated requests pass crede
 | #0 | Repository setup, PR template, basecode comment cleanup, PDF draft skeleton | `issue/00-initial-setup` | Cl | Ba | Checked obsolete comments removal and PR template/draft setup | PR #2 (merged) | via release PR |
 | #1 | FR-01…FR-13, BR-01…BR-08, NFR-01…NFR-06 (SRS specification) | `issue/01-srs` | Cl | Ba | Reviewed SRS Part A, validated domain decisions and problem statement | PR #4 (merged) | via release PR |
 | #2 | Part B — Feature inventory and traceability (F-01…F-12, AC-01…AC-18, RTM) | `issue/02-traceability` | Ba | Cl | Reviewed feature inventory, traceability matrix, and coverage checks | PR #6 (merged) | via release PR |
-| #3 | Part C — System-Level SDS (Architecture, Data Model, API/UI, Roles, Security, GCP) | `issue/03-system-sds` | Cl | Ba | (Pending PR review) | PR #7 (pending) | via release PR |
+| #3 | Part C — System-Level SDS (Architecture, Data Model, API/UI, Roles, Security, GCP) | `issue/03-system-sds` | Cl | Ba | Reviewed 3-tier architecture, ER schema, role matrix, and GCP deployment plan | PR #8 (merged) | via release PR |
+| #4 | Part D — Three-sprint plan (roadmap table, feature allocation, feasibility) | `issue/04-sprint-plan` | Ba | Cl | (Pending PR review) | PR (pending) | via release PR |
 
 History sequence (contract → tests → implementation):
 | Date | Commit | What |
@@ -293,16 +322,17 @@ History sequence (contract → tests → implementation):
 | 2026-11-18 | `bd71d5b` | docs: complete Part A SRS and product scope baseline |
 | 2026-11-20 | `c91d830` | docs: issue #2 - complete feature inventory and traceability matrix (Part B) |
 | 2026-11-21 | `73d4a2b` | docs: issue #3 - complete System-Level SDS specification (Part C) |
+| 2026-11-22 | `pending` | docs: issue #4 - complete three-sprint plan and feasibility justification (Part D) |
 
 Board status screenshot: ⬜ (#15)   Release PR / tag: ⬜ (#15)
 ### F.5 Contributions, AI use, limitations
 | Student | Issues/PRs authored | PRs reviewed | Pair work |
 |---|---|---|---|
-| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS) | #2 (Traceability matrix & Feature inventory) | Architecture & domain design alignment, schema validation |
-| Ba | #2 (Feature inventory & Traceability matrix) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewing PR #7) | Architecture & domain design alignment, schema validation |
+| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS) | #2 (Traceability matrix & Feature inventory), #4 (Reviewing Three-sprint plan) | Architecture & domain design alignment, schema validation |
+| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8) | Architecture & domain design alignment, schema validation |
 
 AI-use declaration:
-- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Reviewed and verified by Cl.
+- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Assisted Ba with establishing the three-sprint roadmap, drafting `docs/sprints/plan.md`, formatting the dependency graph, and documenting Part D in `PDF_DRAFT.md` (`#4`). Reviewed and verified by Ba.
 
 Known limitations / incomplete work / skipped tests:
-- None for Part A and Part B specifications.
+- None for Part A, Part B, Part C, and Part D specifications.
