@@ -148,3 +148,40 @@ catalog_lines = [
     ("   Duration  450ms (transform 55ms, setup 0ms, collect 95ms, tests 310ms)", "#aaaaaa")
 ]
 render_terminal("Terminal — Vitest Catalog API Suite (F-02 / AC-05 / TEST-05)", catalog_lines, "docs/deliverable-1/evidence/issue-09_catalog_test.png")
+
+# 5. Orders and Pricing API test output terminal
+orders_lines = [
+    ("$ cd server && npm test -- sprint-1/orders-pricing sprint-1/orders-create", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/orders-pricing sprint-1/orders-create", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/orders-pricing.unit.test.ts (9 tests) 17ms", "#27c93f"),
+    ("   ✓ calculates line totals and grand total accurately in integer satang", "#27c93f"),
+    ("   ✓ rejects empty items array with OrderValidationError", "#27c93f"),
+    ("   ✓ rejects duplicate product IDs in the same order payload", "#27c93f"),
+    ("   ✓ rejects non-integer, zero, or negative quantities", "#27c93f"),
+    ("   ✓ rejects quantity exceeding MAX_QTY_PER_LINE (10)", "#27c93f"),
+    ("   ✓ rejects order containing an inactive product", "#27c93f"),
+    ("   ✓ rejects order when requested quantity exceeds available stock", "#27c93f"),
+    ("   ✓ rejects order for a product with zero stock", "#27c93f"),
+    ("   ✓ rejects order referencing non-existent product ID", "#27c93f"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/orders-create.api.test.ts (10 tests) 1314ms", "#27c93f"),
+    ("   ✓ TEST-07: Valid multi-item order placement & atomic stock decrement (AC-06)", "#27c93f"),
+    ("   ✓ TEST-08: Authoritative server pricing (AC-07 / BR-03)", "#27c93f"),
+    ("   ✓ TEST-10: Order line constraint validation: empty array (AC-08 / BR-06)", "#27c93f"),
+    ("   ✓ TEST-10: Order line constraint validation: invalid quantities (AC-08 / BR-06)", "#27c93f"),
+    ("   ✓ TEST-10: Order line constraint validation: duplicate product lines (AC-08 / BR-06)", "#27c93f"),
+    ("   ✓ TEST-11: Rejection on inactive product with atomic rollback (AC-09)", "#27c93f"),
+    ("   ✓ TEST-11: Rejection on stockout with atomic rollback (AC-09)", "#27c93f"),
+    ("   ✓ TEST-12: Price snapshot immutability across catalog price updates (AC-10)", "#27c93f"),
+    ("   ✓ Role & Authentication: returns HTTP 401 when unauthenticated", "#27c93f"),
+    ("   ✓ Role & Authentication: returns HTTP 403 when an OPERATOR attempts to place an order", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  2 passed (2)", "#27c93f"),
+    ("      Tests  19 passed (19)", "#27c93f"),
+    ("   Duration  2.36s (transform 158ms, setup 0ms, collect 583ms, tests 1.33s)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Orders & Pricing Test Suite (F-03 / AC-06..AC-10 / TEST-07..TEST-12)", orders_lines, "docs/deliverable-1/evidence/issue-10_orders_test.png")
+
