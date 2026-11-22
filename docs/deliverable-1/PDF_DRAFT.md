@@ -281,7 +281,84 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 4. **Deterministic Seed Data:** Pre-configured, bcrypt-hashed demo accounts ($\ge 3$ customers, $\ge 2$ operators) and catalog products allow clean-room automated test execution without relying on complex user registration workflows.
 5. **Balanced Duo Workload:** The 15 granular issues are evenly split between Student Cl (8 issues) and Student Ba (7 issues), allowing parallel development paths (e.g., Ba drafting contracts and frontend tests while Cl builds authentication) without development bottlenecks.
 
-## Part E — Sprint 1 engineering contracts   ⬜ (#5)
+## Part E — Sprint 1 engineering contracts   ✅ (#5)
+
+### E.1 Sprint 1 Feature Contracts Summary
+
+#### Feature F-01: Session Authentication & Role-Based Access Control
+- **Behavior & Workflow:** Authenticates users via email and bcrypt-hashed passwords. Generates cryptographically secure 32-byte session token stored in PostgreSQL `Session` table (8-hour expiry) and transmitted via `HttpOnly`, `SameSite=Lax` cookies. Identity is established strictly from session lookup, never from request payload fields.
+- **Endpoints:**
+  - `POST /api/auth/login` $\rightarrow$ 200 (sets cookie, returns `{ id, email, role }`), 400 (malformed), 401 (invalid credentials).
+  - `GET /api/auth/me` $\rightarrow$ 200 (returns authenticated user profile), 401 (unauthenticated).
+  - `POST /api/auth/logout` $\rightarrow$ 200 (invalidates session in DB, clears cookie).
+- **Data & Constraints:** `User` table (unique email, `passwordHash`, `role: CUSTOMER | OPERATOR`, `isActive`), `Session` table (unique token, `userId` FK cascade, `expiresAt`).
+
+#### Feature F-02: Authoritative Product Catalog & Live Stock Availability
+- **Behavior & Workflow:** Read-only product listing. Filters strictly for `isActive = true` products. Prices are stored and transmitted strictly in minor units (integer satang, e.g. 25000 = 250.00 THB) to eliminate float rounding errors. Real-time availability badges ("In Stock" vs "Out of Stock").
+- **Endpoints:**
+  - `GET /api/products` $\rightarrow$ 200 (returns active product list with integer `priceMinor` and `stockQuantity`).
+- **Data & Constraints:** `Product` table (`name`, `description`, `priceMinor > 0`, `stockQuantity >= 0`, `isActive`).
+
+#### Feature F-03: Multi-Item Order Creation, Server Pricing & Atomic Decrement
+- **Behavior & Workflow:** Authenticated customer submits 1 to $N$ order lines. Re-queries product prices from PostgreSQL inside an atomic ACID transaction (`prisma.$transaction`). Rejects empty arrays, non-integer quantities, quantities $> 10$, duplicate product lines, inactive items, and stockouts with HTTP 400. Captures price snapshot `OrderItem.unitPriceAtOrder`. Decrements stock atomically and initializes order with status `PLACED`.
+- **Endpoints:**
+  - `POST /api/orders` $\rightarrow$ 201 (order created, total calculated, stock decremented), 400 (validation/stockout error, full rollback), 401 (unauthenticated), 403 (operator forbidden from placing orders).
+- **Data & Constraints:** `Order` (`customerId` FK, `status: PLACED | ACCEPTED`, `totalMinor`), `OrderItem` (`orderId` FK, `productId` FK, `quantity`, `unitPriceAtOrder`, unique composite `[orderId, productId]`).
+
+#### Feature F-04: Customer Order History & Ownership Isolation
+- **Behavior & Workflow:** Customer reviews own historical orders sorted newest first (`createdAt DESC`). Scoped lookups enforce `customerId = session.userId`. Any query for another customer's order ID returns HTTP 404 without leaking metadata.
+- **Endpoints:**
+  - `GET /api/orders` $\rightarrow$ 200 (list of customer's own orders).
+  - `GET /api/orders/:id` $\rightarrow$ 200 (order details and items), 404 (not found or owned by another user).
+
+#### Feature F-05: Operator Order Queue & Single-Step Acceptance
+- **Behavior & Workflow:** Store operator views incoming queue of orders in status `PLACED`, ordered chronologically (oldest first). Operator clicks accept, transitioning status from `PLACED` to `ACCEPTED`, recording `acceptedAt` timestamp and `acceptedByOperatorId`. Guards against duplicate acceptance with HTTP 409 Conflict.
+- **Endpoints:**
+  - `GET /api/operator/orders` $\rightarrow$ 200 (incoming `PLACED` queue), 403 (customer forbidden).
+  - `PATCH /api/operator/orders/:id/accept` $\rightarrow$ 200 (status changed to `ACCEPTED`), 403 (customer forbidden), 404 (not found), 409 (already accepted or invalid state).
+
+---
+
+### E.2 Software Test Specification (STS) — Master Matrix
+
+| TEST ID | Linked AC | Level | Precondition / Input Data | Action Executed | Expected Result & Assertions | Planned Test File |
+|---|---|---|---|---|---|---|
+| **TEST-01** | AC-01 | API | Seeded customer exists in DB | `POST /api/auth/login` valid email/pwd | HTTP 200, `Set-Cookie` contains `sid`, body returns `{ id, email, role }` without hash | `server/tests/sprint-1/auth.api.test.ts` |
+| **TEST-02** | AC-02 | API | Unknown email or wrong password | `POST /api/auth/login` bad credentials | HTTP 401 Unauthorized, generic error message, no cookie set | `server/tests/sprint-1/auth.api.test.ts` |
+| **TEST-03** | AC-03 | API | Missing or expired cookie | `GET /api/auth/me` and `GET /api/orders` | HTTP 401 Unauthorized, empty/safe error body, no protected data exposed | `server/tests/sprint-1/auth.api.test.ts` |
+| **TEST-04** | AC-04 | API | Active authenticated session | `POST /api/auth/logout` then `GET /me` | Logout returns HTTP 200; subsequent `/me` returns HTTP 401; session deleted in DB | `server/tests/sprint-1/auth.api.test.ts` |
+| **TEST-05** | AC-05 | API | Catalog with active & inactive items | `GET /api/products` | HTTP 200, returns active items with integer `priceMinor` and stock; inactive omitted | `server/tests/sprint-1/catalog.api.test.ts` |
+| **TEST-06** | AC-05 | UI | Products returned by mock API | Render `<Catalog />` | Displays product cards, formatted THB prices, "In Stock" badge, disabled if stock = 0 | `client/tests/sprint-1/Catalog.test.tsx` |
+| **TEST-07** | AC-06 | API | Customer session, valid items with stock | `POST /api/orders` valid payload | HTTP 201 Created, status `PLACED`, server-calculated total, stock decremented, price snapshot saved | `server/tests/sprint-1/orders-create.api.test.ts` |
+| **TEST-08** | AC-07 | API | Payload with forged `price: 1` | `POST /api/orders` tampered price | HTTP 201 Created, total matches DB price calculation, forged client price ignored | `server/tests/sprint-1/orders-create.api.test.ts` |
+| **TEST-09** | AC-08 | Unit | Pure pricing/validation service | Call with qty = 0, -1, 1.5, 11, or duplicates | Domain validation throws explicit validation exception for each boundary | `server/tests/sprint-1/orders-pricing.unit.test.ts` |
+| **TEST-10** | AC-08 | API | Empty `items: []` or `quantity: 0` | `POST /api/orders` invalid quantity | HTTP 400 Bad Request with field errors; zero records persisted in DB | `server/tests/sprint-1/orders-create.api.test.ts` |
+| **TEST-11** | AC-09 | API | Product has stock = 1, request qty = 2 | `POST /api/orders` exceeding stock | HTTP 400 Bad Request, transaction rolls back, stock remains exactly 1 | `server/tests/sprint-1/orders-create.api.test.ts` |
+| **TEST-12** | AC-10 | API | Order exists; change product price in DB | `GET /api/orders/:id` for past order | HTTP 200, `unitPriceAtOrder` retains original price; historical total unchanged | `server/tests/sprint-1/orders-create.api.test.ts` |
+| **TEST-13** | AC-11 | API | Customer A has 2 orders; Customer B has 1 | `GET /api/orders` as Customer A | HTTP 200, returns exactly Customer A's 2 orders sorted newest first | `server/tests/sprint-1/orders-access.api.test.ts` |
+| **TEST-14** | AC-11 | UI | Customer orders mock data | Render `<MyOrders />` | Displays list of orders with IDs, date, `PLACED` badge, formatted total, link to details | `client/tests/sprint-1/MyOrders.test.tsx` |
+| **TEST-15** | AC-12 | API | Order B belongs to B; auth as Customer A | `GET /api/orders/:idB` as Customer A | HTTP 404 Not Found; no order metadata or existence confirmation leaked | `server/tests/sprint-1/orders-access.api.test.ts` |
+| **TEST-16** | AC-13 | API | Authenticated user with role `CUSTOMER` | `GET /api/operator/orders` | HTTP 403 Forbidden with `{ "error": "Operator access required" }` | `server/tests/sprint-1/operator-orders.api.test.ts` |
+| **TEST-17** | AC-14 | API | 3 orders placed in DB | `GET /api/operator/orders` as Operator | HTTP 200, returns incoming `PLACED` orders ordered chronologically (oldest first) | `server/tests/sprint-1/operator-orders.api.test.ts` |
+| **TEST-18** | AC-14 | UI | Incoming orders mock data | Render `<OperatorOrders />` | Displays queue table, customer email, order items, and enabled "Accept" button | `client/tests/sprint-1/OperatorOrders.test.tsx` |
+| **TEST-19** | AC-15 | API | Order in status `PLACED`, operator auth | `PATCH /api/operator/orders/:id/accept` | HTTP 200, status becomes `ACCEPTED`, `acceptedAt` set, `acceptedByOperatorId` set | `server/tests/sprint-1/operator-orders.api.test.ts` |
+| **TEST-20** | AC-16 | API | Order already in status `ACCEPTED` | `PATCH /api/operator/orders/:id/accept` second time | HTTP 409 Conflict; database state remains unchanged | `server/tests/sprint-1/operator-orders.api.test.ts` |
+| **TEST-21** | AC-17 | Persistence | Seed script executed twice consecutively | Execute `npm run seed && npm run seed` | Both runs succeed with exit code 0; record counts identical; zero duplicate key errors | `server/tests/sprint-1/persistence.api.test.ts` |
+| **TEST-22** | AC-18 | UI | Login view with mock auth context | Submit Customer vs Operator credentials | Customer login navigates to `/catalog`; Operator login navigates to `/operator/orders` | `client/tests/sprint-1/Login.test.tsx` |
+| **TEST-23** | AC-18 | UI | Authenticated user clicks Logout | Click logout button | Calls logout API, clears auth context, redirects to `/login` | `client/tests/sprint-1/Login.test.tsx` |
+| **TEST-24** | AC-19 | E2E | Browser instance, seeded DB | Complete Customer journey: Login $\rightarrow$ Catalog $\rightarrow$ Add to Cart $\rightarrow$ Submit $\rightarrow$ View Order | Order created in DB, visible on customer screen, catalog stock decremented | `e2e/sprint-1/customer-journey.spec.ts` |
+| **TEST-25** | AC-19 | E2E | Order from TEST-24 | Operator journey: Login $\rightarrow$ Incoming Queue $\rightarrow$ Click Accept $\rightarrow$ Confirm `ACCEPTED` | Order accepted in DB; disappears from `PLACED` queue; customer reloads and sees `ACCEPTED` | `e2e/sprint-1/operator-journey.spec.ts` |
+| **TEST-26** | AC-20 | E2E | Customer browser session | Customer navigates directly to `/operator/orders`; or attempts out-of-stock order | Direct operator navigation blocked with redirect; out-of-stock order displays visible rejection toast | `e2e/sprint-1/access-restrictions.spec.ts` |
+
+---
+
+### E.3 Product Definition of Done (DoD)
+1. **Contract Adherence:** Implemented behavior matches `docs/sprints/sprint-1/F-01`..`F-05` without undocumented divergence.
+2. **STS Test Execution:** All mapped tests (`TEST-01` to `TEST-26`) implemented, executed, and passing with exact command and counts recorded.
+3. **TDD History:** Failing test commit precedes implementation commit on TDD issues (`#7`, `#10`, `#12`).
+4. **Security & Secrets:** Zero secrets in Git or fixtures; passwords hashed with bcrypt; calculations in integer minor units.
+5. **Living PDF Draft & Evidence:** `PDF_DRAFT.md` updated in the same PR, evidence saved in `evidence/`, `.odt` regenerated.
+6. **Peer Review:** Branch reviewed and approved on GitHub with substantive specific comments before merging to `sprint1-staging`.
 
 ## Part F — Working Sprint 1 and verification
 ### F.1 Setup summary   ⬜ (#6, #15)
@@ -313,7 +390,8 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 | #1 | FR-01…FR-13, BR-01…BR-08, NFR-01…NFR-06 (SRS specification) | `issue/01-srs` | Cl | Ba | Reviewed SRS Part A, validated domain decisions and problem statement | PR #4 (merged) | via release PR |
 | #2 | Part B — Feature inventory and traceability (F-01…F-12, AC-01…AC-18, RTM) | `issue/02-traceability` | Ba | Cl | Reviewed feature inventory, traceability matrix, and coverage checks | PR #6 (merged) | via release PR |
 | #3 | Part C — System-Level SDS (Architecture, Data Model, API/UI, Roles, Security, GCP) | `issue/03-system-sds` | Cl | Ba | Reviewed 3-tier architecture, ER schema, role matrix, and GCP deployment plan | PR #8 (merged) | via release PR |
-| #4 | Part D — Three-sprint plan (roadmap table, feature allocation, feasibility) | `issue/04-sprint-plan` | Ba | Cl | (Pending PR review) | PR (pending) | via release PR |
+| #4 | Part D — Three-sprint plan (roadmap table, feature allocation, feasibility) | `issue/04-sprint-plan` | Ba | Cl | Reviewed 3-sprint plan, confirmed feature coverage and Sprint 1 feasibility | PR #9 (merged) | via release PR |
+| #5 | Part E — Sprint 1 engineering contracts (F-01…F-05, STS TEST-01…26, DoD) | `issue/05-sprint1-contracts` | Ba | Cl | (Pending PR review) | PR (pending) | via release PR |
 
 History sequence (contract → tests → implementation):
 | Date | Commit | What |
@@ -322,17 +400,18 @@ History sequence (contract → tests → implementation):
 | 2026-11-18 | `bd71d5b` | docs: complete Part A SRS and product scope baseline |
 | 2026-11-20 | `c91d830` | docs: issue #2 - complete feature inventory and traceability matrix (Part B) |
 | 2026-11-21 | `73d4a2b` | docs: issue #3 - complete System-Level SDS specification (Part C) |
-| 2026-11-22 | `pending` | docs: issue #4 - complete three-sprint plan and feasibility justification (Part D) |
+| 2026-11-22 | `f2ead04` | docs: issue #4 - complete three-sprint plan and feasibility justification (Part D) |
+| 2026-11-22 | `pending` | docs: issue #5 - complete Sprint 1 engineering contracts, STS, and DoD (Part E) |
 
 Board status screenshot: ⬜ (#15)   Release PR / tag: ⬜ (#15)
 ### F.5 Contributions, AI use, limitations
 | Student | Issues/PRs authored | PRs reviewed | Pair work |
 |---|---|---|---|
-| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS) | #2 (Traceability matrix & Feature inventory), #4 (Reviewing Three-sprint plan) | Architecture & domain design alignment, schema validation |
-| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8) | Architecture & domain design alignment, schema validation |
+| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewing Engineering contracts) | Architecture & domain design alignment, schema validation |
+| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8) | Architecture & domain design alignment, schema validation |
 
 AI-use declaration:
-- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Assisted Ba with establishing the three-sprint roadmap, drafting `docs/sprints/plan.md`, formatting the dependency graph, and documenting Part D in `PDF_DRAFT.md` (`#4`). Reviewed and verified by Ba.
+- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Assisted Ba with establishing the three-sprint roadmap, drafting `docs/sprints/plan.md`, formatting the dependency graph, and documenting Part D in `PDF_DRAFT.md` (`#4`). Assisted Ba with writing feature engineering contracts (`F-01` to `F-05`), compiling the complete Software Test Specification (`TEST-01` to `TEST-26`), establishing the Product Definition of Done, and documenting Part E in `PDF_DRAFT.md` (`#5`). Reviewed and verified by Ba.
 
 Known limitations / incomplete work / skipped tests:
-- None for Part A, Part B, Part C, and Part D specifications.
+- None for Part A, Part B, Part C, Part D, and Part E specifications.
