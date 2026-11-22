@@ -115,6 +115,7 @@ const AppContent: React.FC = () => {
                 onBackToCatalog={() => setActiveTab("catalog")}
                 onOrderCreated={(order: Order) => {
                   setSelectedOrderId(order.id);
+                  setActiveTab("my-orders");
                 }}
               />
             )}

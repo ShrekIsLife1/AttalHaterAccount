@@ -1,0 +1,35 @@
+=== SERVER E2E INTEGRATION SUITE (AC-19, AC-20 / TEST-24, TEST-25, TEST-26) ===
+
+ RUN  v2.1.9 /home/lapulga/Documents/cours/Thailande/SWE/lab duo/AttalHaterAccount/server
+
+stdout | tests/sprint-1/e2e-workflow.api.test.ts > E2E Integration & Complete Workflow Journey (AC-19, AC-20 / TEST-24, TEST-25, TEST-26)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/e2e-workflow.api.test.ts > E2E Integration & Complete Workflow Journey (AC-19, AC-20 / TEST-24, TEST-25, TEST-26) > TEST-24: Complete Customer Purchasing Journey (AC-19 / F-01..F-04) > completes full flow: customer login -> browse catalog -> place multi-item order -> verify DB stock decrement -> verify order in My Orders
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/e2e-workflow.api.test.ts > E2E Integration & Complete Workflow Journey (AC-19, AC-20 / TEST-24, TEST-25, TEST-26) > TEST-25: Complete Operator Order Processing Journey (AC-19 / F-05) > completes full flow: customer places order -> operator logs in -> views queue -> accepts order -> order status is ACCEPTED in DB and customer view
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/e2e-workflow.api.test.ts > E2E Integration & Complete Workflow Journey (AC-19, AC-20 / TEST-24, TEST-25, TEST-26) > TEST-26: Access Boundaries & Failure Guard Rails (AC-20 / BR-04, BR-08, NFR-01) > enforces access boundaries: unauthenticated access redirects/401, customer role forbidden from operator queue, out-of-stock atomic rejection
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/e2e-workflow.api.test.ts (3 tests) 881ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  18:19:27
+   Duration  1.53s (transform 178ms, setup 0ms, collect 370ms, tests 881ms, environment 0ms, prepare 55ms)
+
+
+=== CLIENT E2E INTEGRATION SUITE (AC-19, AC-20 / TEST-24, TEST-25, TEST-26) ===
+
+ RUN  v2.1.9 /home/lapulga/Documents/cours/Thailande/SWE/lab duo/AttalHaterAccount/client
+
+ ✓ tests/sprint-1/WorkflowE2E.test.tsx (3 tests) 255ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  18:19:29
+   Duration  1.64s (transform 260ms, setup 65ms, collect 329ms, tests 255ms, environment 391ms, prepare 98ms)
+

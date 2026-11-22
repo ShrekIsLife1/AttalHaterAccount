@@ -271,6 +271,35 @@ auth_hardening_lines = [
 ]
 render_terminal("Terminal — Vitest Cross-Cutting Authorization Hardening Suite (Issue #13)", auth_hardening_lines, "docs/deliverable-1/evidence/issue-13_authorization_test.png")
 
+# 9. E2E Integration & Complete Workflow Journey (AC-19, AC-20 / TEST-24, TEST-25, TEST-26)
+e2e_lines = [
+    ("$ cd server && npm test -- sprint-1/e2e-workflow", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/e2e-workflow", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/e2e-workflow.api.test.ts (3 tests) 881ms", "#27c93f"),
+    ("   ✓ TEST-24: Complete Customer Purchasing Journey (AC-19 / F-01..F-04)", "#27c93f"),
+    ("     - customer login -> browse catalog -> place multi-item order -> verify DB stock decrement -> view order", "#aaaaaa"),
+    ("   ✓ TEST-25: Complete Operator Order Processing Journey (AC-19 / F-05)", "#27c93f"),
+    ("     - customer places order -> operator logs in -> views queue -> accepts order -> order status is ACCEPTED", "#aaaaaa"),
+    ("   ✓ TEST-26: Access Boundaries & Failure Guard Rails (AC-20 / BR-04, BR-08, NFR-01)", "#27c93f"),
+    ("     - unauthenticated 401, customer forbidden from operator queue (403), out-of-stock atomic rollback", "#aaaaaa"),
+    ("", "#cccccc"),
+    ("$ cd client && npm test -- sprint-1/WorkflowE2E", "#38d430"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/WorkflowE2E.test.tsx (3 tests) 255ms", "#27c93f"),
+    ("   ✓ TEST-24: Full Customer Journey - login -> browse catalog -> add to cart -> checkout -> order detail", "#27c93f"),
+    ("   ✓ TEST-25: Full Operator Journey - operator login -> incoming queue -> accept order", "#27c93f"),
+    ("   ✓ TEST-26: Access & Boundary Protection - role segregation in navigation", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  2 passed (2)", "#27c93f"),
+    ("      Tests  6 passed (6)", "#27c93f"),
+    ("   Duration  3.17s across backend and frontend E2E integration suites", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest End-to-End Complete Workflow Suite (Issue #14 / AC-19, AC-20)", e2e_lines, "docs/deliverable-1/evidence/issue-14_e2e_test.png")
+
+
 
 
 
