@@ -173,7 +173,19 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
    </table:table>
    <text:p text:style-name="CaptionText">Figure 1.2: GitHub Project Board — 16 closed issues with linked branches, PRs, and assignees.</text:p>
 
-   <text:p text:style-name="SubsectionTitle">1.3 README.md and .gitignore Specification</text:p>
+   <text:p text:style-name="SubsectionTitle">1.3 Rendered docs/deliverable-1/reviewer.md (Peer Review Records)</text:p>
+   <table:table table:name="BoxReviewer">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">Team Peer Review: https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/deliverable-1/reviewer.md</text:p>
+      <text:p text:style-name="BoxText">Clément Delrieu (69540460016): https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/deliverable-1/69540460016/reviewer.md</text:p>
+      <text:p text:style-name="BoxText">Baptiste Carré (69540460014): https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/deliverable-1/69540460014/reviewer.md</text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+
+   <text:p text:style-name="SubsectionTitle">1.4 README.md and .gitignore Specification</text:p>
    <table:table table:name="BoxReadme">
     <table:table-column/>
     <table:table-row>
@@ -270,6 +282,9 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">Link to docs/deliverable-1/tests.md: https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/deliverable-1/tests.md</text:p>
+      <text:p text:style-name="BoxText">Clément Delrieu (69540460016): https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/deliverable-1/69540460016/tests.md</text:p>
+      <text:p text:style-name="BoxText">Baptiste Carré (69540460014): https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/deliverable-1/69540460014/tests.md</text:p>
       <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/F-01-authentication.md</text:p>
       <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/F-02-catalog.md</text:p>
       <text:p text:style-name="BoxText">https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/sprints/sprint-1/F-03-place-order.md</text:p>
@@ -517,6 +532,20 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
    <text:p text:style-name="CaptionText">Screenshot S7: Enforced security boundaries — Customer restricted from operator queue (403), cross-customer lookup returns 404.</text:p>
+
+   <!-- ANSWER PART F.5 -->
+   <text:p text:style-name="SectionTitle">Answer Part F.5 — AI Use with Reflection (5 pts)</text:p>
+   <text:p text:style-name="SubsectionTitle">F.5.1 Rendered ai-use.md — LLM(s) used, prompts table, and reflection</text:p>
+   <table:table table:name="BoxAiUse">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">Link to docs/deliverable-1/ai-use.md: https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/deliverable-1/ai-use.md</text:p>
+      <text:p text:style-name="BoxText">Clément Delrieu (69540460016): https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/deliverable-1/69540460016/ai_use.md</text:p>
+      <text:p text:style-name="BoxText">Baptiste Carré (69540460014): https://github.com/ShrekIsLife1/AttalHaterAccount/blob/sprint1-staging/docs/deliverable-1/69540460014/ai_use.md</text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
 
   </office:text>
  </office:body>

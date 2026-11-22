@@ -562,10 +562,23 @@ Board status screenshot: ✅ (`docs/deliverable-1/evidence/issue-15_project-boar
 ### F.5 Contributions, AI use, limitations
 | Student | Issues/PRs authored | PRs reviewed | Pair work |
 |---|---|---|---|
-| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS), #6 (Database scaffold, migrations, seed & persistence), #7 (Backend auth, session & RBAC middleware), #9 (Catalog API, product listing, active filter), #11 (Customer ordering UI: Catalog, Checkout, My Orders, Order Detail), #13 (Cross-cutting authorization hardening, permission matrix verification, and regression tests), #15 (Final deliverable-1 render, demo UI screenshots, project board & release tag) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewed Engineering contracts), #8 (Reviewed Login UI), #10 (Reviewed Order creation API & pricing engine), #12 (Reviewed Operator queue & acceptance), #14 (Reviewed End-to-End workflow integration) | Architecture & domain design alignment, schema validation |
-| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS), #8 (Login UI & Authenticated Shell), #10 (Order creation API, pricing engine & atomic stock decrement), #12 (Operator order queue API, acceptance transition, and OperatorOrders UI), #14 (End-to-End integration and complete workflow verification) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8), #6 (Reviewed PR #14), #7 (Reviewed PR #16), #9 (Reviewed PR #20), #11 (Reviewed PR #24), #13 (Reviewed Authorization hardening), #15 (Reviewed Final deliverable & release tag) | Architecture & domain design alignment, schema validation |
+| Cl (`69540460016`) | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS), #6 (Database scaffold, migrations, seed & persistence), #7 (Backend auth, session & RBAC middleware), #9 (Catalog API, product listing, active filter), #11 (Customer ordering UI: Catalog, Checkout, My Orders, Order Detail), #13 (Cross-cutting authorization hardening, permission matrix verification, and regression tests), #15 (Final deliverable-1 render, demo UI screenshots, project board & release tag) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewed Engineering contracts), #8 (Reviewed Login UI), #10 (Reviewed Order creation API & pricing engine), #12 (Reviewed Operator queue & acceptance), #14 (Reviewed End-to-End workflow integration) | Architecture & domain design alignment, schema validation |
+| Ba (`69540460014`) | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS), #8 (Login UI & Authenticated Shell), #10 (Order creation API, pricing engine & atomic stock decrement), #12 (Operator order queue API, acceptance transition, and OperatorOrders UI), #14 (End-to-End integration and complete workflow verification) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8), #6 (Reviewed PR #14), #7 (Reviewed PR #16), #9 (Reviewed PR #20), #11 (Reviewed PR #24), #13 (Reviewed Authorization hardening), #15 (Reviewed Final deliverable & release tag) | Architecture & domain design alignment, schema validation |
+
+Peer review record:
+- Team: [`docs/deliverable-1/reviewer.md`](reviewer.md)
+- Clément (`69540460016`): [`docs/deliverable-1/69540460016/reviewer.md`](69540460016/reviewer.md)
+- Baptiste (`69540460014`): [`docs/deliverable-1/69540460014/reviewer.md`](69540460014/reviewer.md)
+
+Test plan and verification evidence:
+- Master Test Specification: [`docs/deliverable-1/tests.md`](tests.md)
+- Clément (`69540460016`): [`docs/deliverable-1/69540460016/tests.md`](69540460016/tests.md)
+- Baptiste (`69540460014`): [`docs/deliverable-1/69540460014/tests.md`](69540460014/tests.md)
 
 AI-use declaration:
+- Team: [`docs/deliverable-1/ai-use.md`](ai-use.md)
+- Clément (`69540460016`): [`docs/deliverable-1/69540460016/ai_use.md`](69540460016/ai_use.md)
+- Baptiste (`69540460014`): [`docs/deliverable-1/69540460014/ai_use.md`](69540460014/ai_use.md)
 - Antigravity assisted Cl with issue #0 (cleaning comments, PR template), #1 (SRS drafting), #3 (SDS, architecture diagrams), #6 (Prisma setup, seed scripts, persistence tests), #7 (session auth, JWT, RBAC middleware, TDD), #9 (catalog API and tests), #11 (customer UI views and component tests), #13 (authorization hardening tests, permission matrix). Antigravity assisted Ba with #2 (feature inventory, traceability matrix), #4 (sprint plan), #5 (engineering contracts, STS), #8 (login UI, auth context), #10 (order placement API, pricing engine, TDD), #12 (operator queue API and UI, acceptance transition), #14 (E2E integration tests, workflow verification). All generated code and documentation was reviewed by both students before merging.
 
 Known limitations / incomplete work / skipped tests:

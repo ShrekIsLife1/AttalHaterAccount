@@ -1,19 +1,29 @@
-# Lab 1 — Peer Review Record  (fill this in)
+# Lab 1 — Peer Review Record (Team Summary)
 
-**Author:** <your name> — <student id> — GitHub: @<username>
-**Peer reviewer:** <partner name> — <student id> — GitHub: @<username>
+**Team:** Clément Dominique Delrieu (`69540460016`, @ClemDelGh) & Baptiste Carré (`69540460014`, @ShrekIsLife1)  
+**Repository:** https://github.com/ShrekIsLife1/AttalHaterAccount
 
-## Pull Requests I authored (reviewed by my partner)
-| PR | Branch | Reviewer verdict |
-|----|--------|------------------|
-|    | feature/1-project-foundation |  |
-|    | feature/2-health-check |  |
-|    | feature/3-category-seed |  |
-|    | feature/4-category-list |  |
+## All Pull Requests
 
-Reviewer comment I received: <...>
-How I responded: <...>
+| Issue | PR | Branch | Author | Reviewer | Verdict |
+|-------|----|--------|:------:|:--------:|:-------:|
+| #0 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/2 | issue/00-initial-setup | Clément | Baptiste | Approved |
+| #1 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/4 | issue/01-srs | Clément | Baptiste | Approved |
+| #2 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/6 | issue/02-traceability | Baptiste | Clément | Approved |
+| #3 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/8 | issue/03-system-sds | Clément | Baptiste | Approved |
+| #4 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/9 | issue/04-sprint-plan | Baptiste | Clément | Approved |
+| #5 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/12 | issue/05-sprint1-contracts | Baptiste | Clément | Approved |
+| #6 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/14 | issue/06-scaffold-db-seed | Clément | Baptiste | Approved |
+| #7 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/16 | issue/07-auth-session-rbac | Clément | Baptiste | Approved |
+| #8 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/18 | issue/08-login-ui | Baptiste | Clément | Approved |
+| #9 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/20 | issue/09-catalog-api | Clément | Baptiste | Approved |
+| #10 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/23 | feature/10-place-order-api | Baptiste | Clément | Approved |
+| #11 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/24 | issue/11-customer-order-ui | Clément | Baptiste | Approved |
+| #12 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/26 | feature/12-operator-accept | Baptiste | Clément | Approved |
+| #13 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/29 | issue/13-authorization-hardening | Clément | Baptiste | Approved |
+| #14 | https://github.com/ShrekIsLife1/AttalHaterAccount/pull/31 | feature/14-e2e-workflow | Baptiste | Clément | Approved |
+| #15 | _(direct merge — commit `53deb40`)_ | issue/15-release-deliverable | Clément | Baptiste | — |
 
-## Pull Requests I reviewed for my partner
-My comment: <...>
-Partner's response: <...>
+## Individual Peer Review Records
+- Clément Dominique Delrieu (69540460016): [lab-01_16/reviewer.md](lab-01_16/reviewer.md)
+- Baptiste Carré (69540460014): [lab-01_14/reviewer.md](lab-01_14/reviewer.md)
