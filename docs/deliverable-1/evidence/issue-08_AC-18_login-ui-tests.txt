@@ -1,0 +1,14 @@
+
+> toktickit-client@1.0.0 test
+> vitest run sprint-1/Login
+
+
+ RUN  v2.1.9 /home/lapulga/Documents/cours/Thailande/SWE/lab duo/AttalHaterAccount/client
+
+ ✓ tests/sprint-1/Login.test.tsx (6 tests) 757ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  14:29:10
+   Duration  2.26s (transform 182ms, setup 102ms, collect 293ms, tests 757ms, environment 399ms, prepare 106ms)
+

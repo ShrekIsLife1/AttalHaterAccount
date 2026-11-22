@@ -1,0 +1,51 @@
+
+> unimerch-server@1.0.0 test
+> vitest run --reporter=verbose
+
+
+ RUN  v2.1.9 /home/meownux/Documents/SWE/Vinted/AttalHaterAccount/server
+
+ ✓ tests/lab-01/health.test.ts > GET /api/health > returns 200 with status ok and the service name
+stdout | tests/sprint-1/persistence.api.test.ts > Persistence & Seed Foundation (AC-17 / TEST-21)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/persistence.api.test.ts > Persistence & Seed Foundation (AC-17 / TEST-21) > persists seeded users and products correctly
+stdout | tests/sprint-1/persistence.api.test.ts > Persistence & Seed Foundation (AC-17 / TEST-21) > is idempotent: running seed a second time produces no duplicates or constraint errors
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02 / AC-05 / TEST-05)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/persistence.api.test.ts > Persistence & Seed Foundation (AC-17 / TEST-21) > is idempotent: running seed a second time produces no duplicates or constraint errors
+ ✓ tests/sprint-1/persistence.api.test.ts > Persistence & Seed Foundation (AC-17 / TEST-21) > enforces unique constraint on user email
+ ✓ tests/sprint-1/persistence.api.test.ts > Persistence & Seed Foundation (AC-17 / TEST-21) > data persists across client disconnect and reconnect
+ ✓ tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02 / AC-05 / TEST-05) > TEST-05: GET /api/products — active catalog with stock availability (AC-05) > returns HTTP 200 with an array of active products
+ ✓ tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02 / AC-05 / TEST-05) > TEST-05: GET /api/products — active catalog with stock availability (AC-05) > returns integer priceMinor and stockQuantity for each product
+ ✓ tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02 / AC-05 / TEST-05) > TEST-05: GET /api/products — active catalog with stock availability (AC-05) > returns expected product fields (id, name, description, priceMinor, stockQuantity, isActive)
+ ✓ tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02 / AC-05 / TEST-05) > TEST-05: GET /api/products — active catalog with stock availability (AC-05) > only returns active products (isActive=true); inactive products are omitted
+ ✓ tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02 / AC-05 / TEST-05) > TEST-05: GET /api/products — active catalog with stock availability (AC-05) > includes out-of-stock products (stockQuantity=0) in the response
+stdout | tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02 / AC-05 / TEST-05) > TEST-05: GET /api/products — active catalog with stock availability (AC-05) > returns HTTP 200 with empty array when no active products exist
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02 / AC-05 / TEST-05) > TEST-05: GET /api/products — active catalog with stock availability (AC-05) > returns HTTP 200 with empty array when no active products exist
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-01: Valid Login (AC-01) > logs in with valid customer credentials, returns safe user object, and sets HttpOnly session cookie
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-01: Valid Login (AC-01) > logs in with valid operator credentials, returns OPERATOR role
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-02: Invalid Credentials & Inactive Accounts (AC-02) > returns HTTP 401 with generic error on invalid password
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-02: Invalid Credentials & Inactive Accounts (AC-02) > returns HTTP 401 with identical generic error on non-existent email (no user enumeration)
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-02: Invalid Credentials & Inactive Accounts (AC-02) > returns HTTP 400 Bad Request when email or password is missing
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-03: Session Identity & Route Protection (AC-03) > returns HTTP 401 when GET /api/auth/me is requested without a session cookie
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-03: Session Identity & Route Protection (AC-03) > returns HTTP 401 when GET /api/auth/me is requested with an invalid session token
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-03: Session Identity & Route Protection (AC-03) > returns current user profile when valid session cookie is provided
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-04: Logout & Session Invalidation (AC-04) > logs out successfully, clears cookie, and invalidates session in DB
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-16: RBAC Protection & Role Authorization (AC-13) > rejects unauthenticated request to operator-only route with HTTP 401
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-16: RBAC Protection & Role Authorization (AC-13) > rejects customer access to operator-only route with HTTP 403 Forbidden
+ ✓ tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-16: RBAC Protection & Role Authorization (AC-13) > allows operator access to operator-only route with HTTP 200 OK
+
+ Test Files  4 passed | 1 skipped (5)
+      Tests  23 passed | 1 todo (24)
+   Start at  14:53:06
+   Duration  921ms (transform 122ms, setup 0ms, collect 612ms, tests 973ms, environment 1ms, prepare 319ms)
+

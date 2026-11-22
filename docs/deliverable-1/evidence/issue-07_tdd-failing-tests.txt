@@ -1,0 +1,179 @@
+
+> unimerch-server@1.0.0 test
+> vitest run sprint-1/auth
+
+
+ RUN  v2.1.9 /home/meownux/Documents/SWE/Vinted/AttalHaterAccount/server
+
+ ❯ tests/sprint-1/auth.api.test.ts (9 tests | 9 failed) 61ms
+   × Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-01: Valid Login (AC-01) > logs in with valid customer credentials, returns safe user object, and sets HttpOnly session cookie 16ms
+     → expected 404 to be 200 // Object.is equality
+   × Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-01: Valid Login (AC-01) > logs in with valid operator credentials, returns OPERATOR role 3ms
+     → expected 404 to be 200 // Object.is equality
+   × Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-02: Invalid Credentials & Inactive Accounts (AC-02) > returns HTTP 401 with generic error on invalid password 2ms
+     → expected 404 to be 401 // Object.is equality
+   × Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-02: Invalid Credentials & Inactive Accounts (AC-02) > returns HTTP 401 with identical generic error on non-existent email (no user enumeration) 2ms
+     → expected 404 to be 401 // Object.is equality
+   × Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-02: Invalid Credentials & Inactive Accounts (AC-02) > returns HTTP 400 Bad Request when email or password is missing 2ms
+     → expected 404 to be 400 // Object.is equality
+   × Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-03: Session Identity & Route Protection (AC-03) > returns HTTP 401 when GET /api/auth/me is requested without a session cookie 2ms
+     → expected 404 to be 401 // Object.is equality
+   × Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-03: Session Identity & Route Protection (AC-03) > returns HTTP 401 when GET /api/auth/me is requested with an invalid session token 2ms
+     → expected 404 to be 401 // Object.is equality
+   × Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-03: Session Identity & Route Protection (AC-03) > returns current user profile when valid session cookie is provided 4ms
+     → Invalid value "undefined" for header "Cookie"
+   × Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-04: Logout & Session Invalidation (AC-04) > logs out successfully, clears cookie, and invalidates session in DB 2ms
+     → Invalid value "undefined" for header "Cookie"
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-01: Valid Login (AC-01) > logs in with valid customer credentials, returns safe user object, and sets HttpOnly session cookie
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ tests/sprint-1/auth.api.test.ts:34:26
+     32|         .send(customerCredentials);
+     33| 
+     34|       expect(res.status).toBe(200);
+       |                          ^
+     35|       expect(res.body).toHaveProperty("user");
+     36|       expect(res.body.user).toMatchObject({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-01: Valid Login (AC-01) > logs in with valid operator credentials, returns OPERATOR role
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ tests/sprint-1/auth.api.test.ts:60:26
+     58|         .send(operatorCredentials);
+     59| 
+     60|       expect(res.status).toBe(200);
+       |                          ^
+     61|       expect(res.body.user).toMatchObject({
+     62|         email: operatorCredentials.email,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-02: Invalid Credentials & Inactive Accounts (AC-02) > returns HTTP 401 with generic error on invalid password
+AssertionError: expected 404 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 404
+
+ ❯ tests/sprint-1/auth.api.test.ts:79:26
+     77|         });
+     78| 
+     79|       expect(res.status).toBe(401);
+       |                          ^
+     80|       expect(res.body).toHaveProperty("error");
+     81|       expect(res.body.error).toMatch(/invalid email or password/i);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-02: Invalid Credentials & Inactive Accounts (AC-02) > returns HTTP 401 with identical generic error on non-existent email (no user enumeration)
+AssertionError: expected 404 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 404
+
+ ❯ tests/sprint-1/auth.api.test.ts:93:26
+     91|         });
+     92| 
+     93|       expect(res.status).toBe(401);
+       |                          ^
+     94|       expect(res.body).toHaveProperty("error");
+     95|       expect(res.body.error).toMatch(/invalid email or password/i);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-02: Invalid Credentials & Inactive Accounts (AC-02) > returns HTTP 400 Bad Request when email or password is missing
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ tests/sprint-1/auth.api.test.ts:104:26
+    102|         .send({ email: "customer1@unimerch.ac.th" });
+    103| 
+    104|       expect(res.status).toBe(400);
+       |                          ^
+    105|       expect(res.body).toHaveProperty("error");
+    106|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-03: Session Identity & Route Protection (AC-03) > returns HTTP 401 when GET /api/auth/me is requested without a session cookie
+AssertionError: expected 404 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 404
+
+ ❯ tests/sprint-1/auth.api.test.ts:113:26
+    111|       const res = await request(app).get("/api/auth/me");
+    112| 
+    113|       expect(res.status).toBe(401);
+       |                          ^
+    114|       expect(res.body).toHaveProperty("error");
+    115|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+ FAIL  tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-03: Session Identity & Route Protection (AC-03) > returns HTTP 401 when GET /api/auth/me is requested with an invalid session token
+AssertionError: expected 404 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 404
+
+ ❯ tests/sprint-1/auth.api.test.ts:122:26
+    120|         .set("Cookie", ["sid=invalid-token-12345"]);
+    121| 
+    122|       expect(res.status).toBe(401);
+       |                          ^
+    123|       expect(res.body).toHaveProperty("error");
+    124|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
+
+ FAIL  tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-03: Session Identity & Route Protection (AC-03) > returns current user profile when valid session cookie is provided
+ FAIL  tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13) > TEST-04: Logout & Session Invalidation (AC-04) > logs out successfully, clears cookie, and invalidates session in DB
+TypeError: Invalid value "undefined" for header "Cookie"
+ ❯ Test.request node_modules/superagent/src/node/index.js:1037:22
+ ❯ Test.Request.end node_modules/superagent/src/node/index.js:1275:10
+ ❯ node_modules/supertest/lib/test.js:390:15
+ ❯ node_modules/supertest/lib/test.js:211:9
+ ❯ node_modules/supertest/lib/test.js:210:17
+ ❯ node_modules/supertest/lib/test.js:132:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
+
+ Test Files  1 failed (1)
+      Tests  9 failed (9)
+   Start at  14:08:31
+   Duration  364ms (transform 38ms, setup 0ms, collect 106ms, tests 61ms, environment 0ms, prepare 60ms)
+

@@ -1,0 +1,48 @@
+
+> unimerch-server@1.0.0 test
+> vitest run sprint-1/orders-pricing sprint-1/orders-create
+
+
+ RUN  v2.1.9 /home/lapulga/Documents/cours/Thailande/SWE/lab duo/AttalHaterAccount/server
+
+ ✓ tests/sprint-1/orders-pricing.unit.test.ts (9 tests) 17ms
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-07: Valid multi-item order placement & atomic stock decrement (AC-06) > creates an order in PLACED status, snapshots prices, and atomically decrements inventory
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-08: Authoritative server pricing (AC-07 / BR-03) > ignores client-sent total, price, unitPrice, or customerId and recalculates from DB
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects empty items array with HTTP 400
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects invalid quantities (0, negative, > 10) with HTTP 400
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects duplicate product lines in a single order payload with HTTP 400
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-11: Rejection on inactive product or stockout with atomic rollback (AC-09) > rejects order containing an inactive product and creates zero order records
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-11: Rejection on inactive product or stockout with atomic rollback (AC-09) > rejects order when requested quantity exceeds available stock and leaves stock unchanged
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-12: Price snapshot immutability across catalog price updates (AC-10) > preserves historical unitPriceAtOrder even after product catalog price changes in DB
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > Role & Authentication Restrictions (BR-08 / NFR-01) > returns HTTP 401 when unauthenticated
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > Role & Authentication Restrictions (BR-08 / NFR-01) > returns HTTP 403 when an OPERATOR attempts to place an order
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/orders-create.api.test.ts (10 tests) 1314ms
+
+ Test Files  2 passed (2)
+      Tests  19 passed (19)
+   Start at  15:32:09
+   Duration  2.36s (transform 158ms, setup 0ms, collect 583ms, tests 1.33s, environment 0ms, prepare 197ms)
+

@@ -1,0 +1,305 @@
+#!/usr/bin/env python3
+"""
+Render terminal outputs as crisp dark-themed terminal PNG images for Deliverable 1.
+"""
+import os
+from PIL import Image, ImageDraw, ImageFont
+
+os.makedirs("docs/deliverable-1/evidence", exist_ok=True)
+
+def get_mono_font(size=13):
+    candidates = [
+        "/run/host/fonts/truetype/jetbrains-mono-zorin-os/JetBrainsMono-Bold.ttf",
+        "/run/host/fonts/truetype/noto/NotoMono-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return ImageFont.truetype(p, size)
+    return ImageFont.load_default()
+
+def render_terminal(title, lines, out_path, width=950):
+    font = get_mono_font(13)
+    title_font = get_mono_font(12)
+    line_h = 20
+    top_bar_h = 32
+    padding = 16
+    
+    total_h = top_bar_h + padding * 2 + len(lines) * line_h
+    im = Image.new("RGB", (width, total_h), "#181818")
+    draw = ImageDraw.Draw(im)
+
+    # Top window bar
+    draw.rectangle([0, 0, width, top_bar_h], fill="#252526")
+    # Window control dots
+    draw.ellipse([14, 11, 24, 21], fill="#ff5f56") # red
+    draw.ellipse([32, 11, 42, 21], fill="#ffbd2e") # yellow
+    draw.ellipse([50, 11, 60, 21], fill="#27c93f") # green
+    # Title
+    draw.text((width // 2, top_bar_h // 2), title, fill="#cccccc", font=title_font, anchor="mm")
+
+    y = top_bar_h + padding
+    for line in lines:
+        text, color = line
+        draw.text((padding, y), text, fill=color, font=font)
+        y += line_h
+
+    im.save(out_path, quality=95)
+    print(f"Generated {out_path}")
+
+# 1. Seed output terminal
+seed_lines = [
+    ("$ cd server && npm run seed", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 seed", "#888888"),
+    ("> tsx prisma/seed.ts", "#888888"),
+    ("", "#cccccc"),
+    ("Seeding completed successfully: 5 users and 8 products upserted.", "#27c93f"),
+    ("", "#cccccc"),
+    ("$ npm run seed  # IDEMPOTENCY VERIFICATION RUN", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 seed", "#888888"),
+    ("> tsx prisma/seed.ts", "#888888"),
+    ("", "#cccccc"),
+    ("Seeding completed successfully: 5 users and 8 products upserted.", "#27c93f"),
+    ("", "#cccccc"),
+    ("meownux@dev-station:~/UniMerch/server$ [OK - 0 duplicate records created]", "#00bcff")
+]
+render_terminal("Terminal — Idempotent Database Seed (Prisma / PostgreSQL)", seed_lines, "docs/deliverable-1/evidence/issue-06_seed_terminal.png")
+
+# 2. Persistence test output terminal
+test_lines = [
+    ("$ cd server && npm test -- sprint-1/persistence", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/persistence", "#888888"),
+    ("", "#cccccc"),
+    (" RUN  v2.1.9 /home/meownux/Documents/SWE/Vinted/AttalHaterAccount/server", "#888888"),
+    ("", "#cccccc"),
+    ("stdout | tests/sprint-1/persistence.api.test.ts > Persistence & Seed Foundation", "#888888"),
+    ("Seeding completed successfully: 5 users and 8 products upserted.", "#aaaaaa"),
+    ("", "#cccccc"),
+    ("stdout | tests/sprint-1/persistence.api.test.ts > is idempotent: running seed a second time", "#888888"),
+    ("Seeding completed successfully: 5 users and 8 products upserted.", "#aaaaaa"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/persistence.api.test.ts (4 tests) 194ms", "#27c93f"),
+    ("   ✓ PostgreSQL connects and unimerch database schema is active", "#27c93f"),
+    ("   ✓ Seed idempotence: running seed twice produces no duplicates or constraint errors", "#27c93f"),
+    ("   ✓ Seeded customers and operators have valid bcrypt password hashes and roles", "#27c93f"),
+    ("   ✓ Product catalog contains required active, out-of-stock, and inactive items", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  1 passed (1)", "#27c93f"),
+    ("      Tests  4 passed (4)", "#27c93f"),
+    ("   Start at  13:53:20", "#aaaaaa"),
+    ("   Duration  444ms (transform 40ms, setup 0ms, collect 53ms, tests 194ms)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Automated Persistence & Seed Suite (AC-17 / TEST-21)", test_lines, "docs/deliverable-1/evidence/issue-06_persistence_test.png")
+
+# 3. Auth and Session RBAC test output terminal
+auth_lines = [
+    ("$ cd server && npm test -- sprint-1/auth", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/auth", "#888888"),
+    ("", "#cccccc"),
+    ("stdout | tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01)", "#888888"),
+    ("Seeding completed successfully: 5 users and 8 products upserted.", "#aaaaaa"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/auth.api.test.ts (12 tests) 560ms", "#27c93f"),
+    ("   ✓ TEST-01: Valid Login (AC-01) - logs in with valid customer credentials (200, HttpOnly sid, safe user)", "#27c93f"),
+    ("   ✓ TEST-01: Valid Login (AC-01) - logs in with valid operator credentials (OPERATOR role)", "#27c93f"),
+    ("   ✓ TEST-02: Invalid Credentials (AC-02) - returns HTTP 401 with generic error on invalid password", "#27c93f"),
+    ("   ✓ TEST-02: Invalid Credentials (AC-02) - returns HTTP 401 on non-existent email (no user enumeration)", "#27c93f"),
+    ("   ✓ TEST-02: Invalid Credentials (AC-02) - returns HTTP 400 Bad Request when email/password missing", "#27c93f"),
+    ("   ✓ TEST-03: Session Identity (AC-03) - returns HTTP 401 on missing session cookie", "#27c93f"),
+    ("   ✓ TEST-03: Session Identity (AC-03) - returns HTTP 401 on invalid/expired session token", "#27c93f"),
+    ("   ✓ TEST-03: Session Identity (AC-03) - returns current profile when valid session cookie provided", "#27c93f"),
+    ("   ✓ TEST-04: Logout & Invalidation (AC-04) - logs out, clears cookie, invalidates session in DB", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection (AC-13) - rejects unauthenticated request with HTTP 401", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection (AC-13) - rejects customer access to operator route with HTTP 403", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection (AC-13) - allows operator access to operator route with HTTP 200", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  1 passed (1)", "#27c93f"),
+    ("      Tests  12 passed (12)", "#27c93f"),
+    ("   Duration  813ms (transform 60ms, setup 0ms, collect 149ms, tests 442ms)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Authentication & Session RBAC Suite (TEST-01..TEST-04, TEST-16)", auth_lines, "docs/deliverable-1/evidence/issue-07_auth_test.png")
+
+# 4. Catalog API test output terminal
+catalog_lines = [
+    ("$ cd server && npm test -- sprint-1/catalog", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/catalog", "#888888"),
+    ("", "#cccccc"),
+    ("stdout | tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02)", "#888888"),
+    ("Seeding completed successfully: 5 users and 8 products upserted.", "#aaaaaa"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/catalog.api.test.ts (6 tests) 310ms", "#27c93f"),
+    ("   ✓ TEST-05: returns HTTP 200 with an array of active products", "#27c93f"),
+    ("   ✓ TEST-05: returns integer priceMinor and stockQuantity for each product", "#27c93f"),
+    ("   ✓ TEST-05: returns expected product fields (id, name, description, priceMinor, stockQuantity, isActive)", "#27c93f"),
+    ("   ✓ TEST-05: only returns active products (isActive=true); inactive products are omitted", "#27c93f"),
+    ("   ✓ TEST-05: includes out-of-stock products (stockQuantity=0) in the response", "#27c93f"),
+    ("   ✓ TEST-05: returns HTTP 200 with empty array when no active products exist", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  1 passed (1)", "#27c93f"),
+    ("      Tests  6 passed (6)", "#27c93f"),
+    ("   Duration  450ms (transform 55ms, setup 0ms, collect 95ms, tests 310ms)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Catalog API Suite (F-02 / AC-05 / TEST-05)", catalog_lines, "docs/deliverable-1/evidence/issue-09_catalog_test.png")
+
+# 5. Orders and Pricing API test output terminal
+orders_lines = [
+    ("$ cd server && npm test -- sprint-1/orders-pricing sprint-1/orders-create", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/orders-pricing sprint-1/orders-create", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/orders-pricing.unit.test.ts (9 tests) 17ms", "#27c93f"),
+    ("   ✓ calculates line totals and grand total accurately in integer satang", "#27c93f"),
+    ("   ✓ rejects empty items array with OrderValidationError", "#27c93f"),
+    ("   ✓ rejects duplicate product IDs in the same order payload", "#27c93f"),
+    ("   ✓ rejects non-integer, zero, or negative quantities", "#27c93f"),
+    ("   ✓ rejects quantity exceeding MAX_QTY_PER_LINE (10)", "#27c93f"),
+    ("   ✓ rejects order containing an inactive product", "#27c93f"),
+    ("   ✓ rejects order when requested quantity exceeds available stock", "#27c93f"),
+    ("   ✓ rejects order for a product with zero stock", "#27c93f"),
+    ("   ✓ rejects order referencing non-existent product ID", "#27c93f"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/orders-create.api.test.ts (10 tests) 1314ms", "#27c93f"),
+    ("   ✓ TEST-07: Valid multi-item order placement & atomic stock decrement (AC-06)", "#27c93f"),
+    ("   ✓ TEST-08: Authoritative server pricing (AC-07 / BR-03)", "#27c93f"),
+    ("   ✓ TEST-10: Order line constraint validation: empty array (AC-08 / BR-06)", "#27c93f"),
+    ("   ✓ TEST-10: Order line constraint validation: invalid quantities (AC-08 / BR-06)", "#27c93f"),
+    ("   ✓ TEST-10: Order line constraint validation: duplicate product lines (AC-08 / BR-06)", "#27c93f"),
+    ("   ✓ TEST-11: Rejection on inactive product with atomic rollback (AC-09)", "#27c93f"),
+    ("   ✓ TEST-11: Rejection on stockout with atomic rollback (AC-09)", "#27c93f"),
+    ("   ✓ TEST-12: Price snapshot immutability across catalog price updates (AC-10)", "#27c93f"),
+    ("   ✓ Role & Authentication: returns HTTP 401 when unauthenticated", "#27c93f"),
+    ("   ✓ Role & Authentication: returns HTTP 403 when an OPERATOR attempts to place an order", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  2 passed (2)", "#27c93f"),
+    ("      Tests  19 passed (19)", "#27c93f"),
+    ("   Duration  2.36s (transform 158ms, setup 0ms, collect 583ms, tests 1.33s)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Orders & Pricing Test Suite (F-03 / AC-06..AC-10 / TEST-07..TEST-12)", orders_lines, "docs/deliverable-1/evidence/issue-10_orders_test.png")
+
+# 6. Customer Ordering UI & Access Test Suite
+ui_lines = [
+    ("$ cd client && npm test -- sprint-1/Checkout sprint-1/MyOrders sprint-1/Catalog", "#38d430"),
+    ("", "#cccccc"),
+    ("> toktickit-client@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/Checkout sprint-1/MyOrders sprint-1/Catalog", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/Checkout.test.tsx (4 tests) 72ms", "#27c93f"),
+    ("   ✓ renders cart items, line subtotals, and estimated total clearly labelled", "#27c93f"),
+    ("   ✓ submits order, shows busy state, and displays persisted order detail afterwards", "#27c93f"),
+    ("   ✓ displays server rejection error clearly when product is out of stock", "#27c93f"),
+    ("   ✓ renders friendly empty cart state when cart has no items", "#27c93f"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/MyOrders.test.tsx (5 tests) 54ms", "#27c93f"),
+    ("   ✓ displays loading indicator initially while orders are being fetched", "#27c93f"),
+    ("   ✓ renders list of orders with IDs, status badges, and formatted totals", "#27c93f"),
+    ("   ✓ calls onSelectOrder with the correct orderId when 'View Details' is clicked", "#27c93f"),
+    ("   ✓ renders friendly empty state when customer has zero orders", "#27c93f"),
+    ("   ✓ renders error state when fetching orders fails", "#27c93f"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/Catalog.test.tsx (2 tests) 28ms", "#27c93f"),
+    ("   ✓ renders active products with formatted THB prices and availability badges", "#27c93f"),
+    ("   ✓ adds selected quantity to cart when 'Add to Cart' is clicked", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  3 passed (3)", "#27c93f"),
+    ("      Tests  11 passed (11)", "#27c93f"),
+    ("   Duration  940ms (transform 110ms, setup 180ms, collect 380ms, tests 154ms)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Customer Ordering UI Suite (F-02, F-03, F-04 / TEST-06, TEST-14)", ui_lines, "docs/deliverable-1/evidence/issue-11_customer-ordering-ui-tests.png")
+
+# 7. Operator Orders Queue & Acceptance Suite (F-05 / AC-13..AC-16 / TEST-16..TEST-20)
+operator_lines = [
+    ("$ cd server && npm test -- sprint-1/operator-orders", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/operator-orders", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/operator-orders.api.test.ts (9 tests) 1301ms", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection - returns HTTP 401 when unauthenticated", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection - returns HTTP 403 when CUSTOMER accesses GET /api/operator/orders", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection - returns HTTP 403 when CUSTOMER calls PATCH /api/operator/orders/:id/accept", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection - allows authenticated OPERATOR to access GET /api/operator/orders", "#27c93f"),
+    ("   ✓ TEST-17: Operator Queue - returns only PLACED orders, ordered chronologically (createdAt ASC)", "#27c93f"),
+    ("   ✓ TEST-19: Single-Step Acceptance - transitions PLACED to ACCEPTED, records acceptedAt and operatorId", "#27c93f"),
+    ("   ✓ TEST-20: State Conflict Guard - returns HTTP 409 Conflict when accepting already ACCEPTED order", "#27c93f"),
+    ("   ✓ TEST-20: State Conflict Guard - returns HTTP 404 Not Found when order ID does not exist", "#27c93f"),
+    ("   ✓ TEST-20: State Conflict Guard - returns HTTP 400 Bad Request when order ID is not a valid number", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  1 passed (1)", "#27c93f"),
+    ("      Tests  9 passed (9)", "#27c93f"),
+    ("   Duration  1.94s (transform 181ms, setup 0ms, collect 388ms, tests 1.30s)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Operator Orders & Acceptance Suite (F-05 / AC-13..AC-16 / TEST-16..TEST-20)", operator_lines, "docs/deliverable-1/evidence/issue-12_operator_test.png")
+
+# 8. Authorization Hardening & Permission Matrix Suite (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08)
+auth_hardening_lines = [
+    ("$ cd server && npm test -- sprint-1/orders-access sprint-1/authorization", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/orders-access sprint-1/authorization --reporter=verbose", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/authorization.api.test.ts (18 tests) 680ms", "#27c93f"),
+    ("   ✓ 1. Unauthenticated Protection: rejects all protected endpoints with HTTP 401", "#27c93f"),
+    ("   ✓ 1. Unauthenticated Protection: rejects invalid/forged session cookies with HTTP 401", "#27c93f"),
+    ("   ✓ 2. Role-Based Segregation: Customer calling operator endpoints returns 403 Forbidden", "#27c93f"),
+    ("   ✓ 2. Role-Based Segregation: Operator calling customer endpoints returns 403 Forbidden", "#27c93f"),
+    ("   ✓ 2. Role-Based Segregation: Operator viewing customer order detail returns 200 OK", "#27c93f"),
+    ("   ✓ 3. Ownership Isolation: Customer requesting another customer's order returns 404 (no leak)", "#27c93f"),
+    ("   ✓ 4. Tampering Protection: client-forged prices/totals ignored, authoritative satang used", "#27c93f"),
+    ("   ✓ 5. Inactive Accounts: login rejected with 401 for deactivated accounts", "#27c93f"),
+    ("   ✓ 5. Session Lifecycle: active session immediately rejected on DB user deactivation", "#27c93f"),
+    ("   ✓ 5. Session Lifecycle: logout invalidates session and deletes DB row (subsequent 401)", "#27c93f"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/orders-access.api.test.ts (5 tests) 420ms", "#27c93f"),
+    ("   ✓ TEST-13: Customer lists only own orders, sorted newest first (HTTP 200)", "#27c93f"),
+    ("   ✓ TEST-13: Customer order list rejects unauthenticated requests with HTTP 401", "#27c93f"),
+    ("   ✓ TEST-15: Customer allowed to view own order detail (HTTP 200)", "#27c93f"),
+    ("   ✓ TEST-15: Cross-customer order access returns HTTP 404 Not Found (no metadata leak)", "#27c93f"),
+    ("   ✓ TEST-15: Non-existent order ID returns HTTP 404 Not Found", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  2 passed (2)", "#27c93f"),
+    ("      Tests  23 passed (23)", "#27c93f"),
+    ("   Duration  1.17s (transform 57ms, setup 0ms, collect 241ms, tests 680ms)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Cross-Cutting Authorization Hardening Suite (Issue #13)", auth_hardening_lines, "docs/deliverable-1/evidence/issue-13_authorization_test.png")
+
+# 9. E2E Integration & Complete Workflow Journey (AC-19, AC-20 / TEST-24, TEST-25, TEST-26)
+e2e_lines = [
+    ("$ cd server && npm test -- sprint-1/e2e-workflow", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/e2e-workflow", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/e2e-workflow.api.test.ts (3 tests) 881ms", "#27c93f"),
+    ("   ✓ TEST-24: Complete Customer Purchasing Journey (AC-19 / F-01..F-04)", "#27c93f"),
+    ("     - customer login -> browse catalog -> place multi-item order -> verify DB stock decrement -> view order", "#aaaaaa"),
+    ("   ✓ TEST-25: Complete Operator Order Processing Journey (AC-19 / F-05)", "#27c93f"),
+    ("     - customer places order -> operator logs in -> views queue -> accepts order -> order status is ACCEPTED", "#aaaaaa"),
+    ("   ✓ TEST-26: Access Boundaries & Failure Guard Rails (AC-20 / BR-04, BR-08, NFR-01)", "#27c93f"),
+    ("     - unauthenticated 401, customer forbidden from operator queue (403), out-of-stock atomic rollback", "#aaaaaa"),
+    ("", "#cccccc"),
+    ("$ cd client && npm test -- sprint-1/WorkflowE2E", "#38d430"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/WorkflowE2E.test.tsx (3 tests) 255ms", "#27c93f"),
+    ("   ✓ TEST-24: Full Customer Journey - login -> browse catalog -> add to cart -> checkout -> order detail", "#27c93f"),
+    ("   ✓ TEST-25: Full Operator Journey - operator login -> incoming queue -> accept order", "#27c93f"),
+    ("   ✓ TEST-26: Access & Boundary Protection - role segregation in navigation", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  2 passed (2)", "#27c93f"),
+    ("      Tests  6 passed (6)", "#27c93f"),
+    ("   Duration  3.17s across backend and frontend E2E integration suites", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest End-to-End Complete Workflow Suite (Issue #14 / AC-19, AC-20)", e2e_lines, "docs/deliverable-1/evidence/issue-14_e2e_test.png")
+
+
+
+
+

@@ -1,32 +1,157 @@
-import { useState } from "react";
-import { checkSystem, Category } from "./api.js";
+import React, { useState, useEffect } from "react";
+import { AuthProvider, useAuth } from "./context/AuthContext.js";
+import { Login } from "./components/Login.js";
+import { Navbar } from "./components/Navbar.js";
+import { Catalog } from "./components/Catalog.js";
+import { Checkout } from "./components/Checkout.js";
+import { MyOrders } from "./components/MyOrders.js";
+import { OrderDetail } from "./components/OrderDetail.js";
+import { OperatorOrders } from "./components/OperatorOrders.js";
+import { Product, CartItem, Order } from "./api.js";
 
-// UI states you must handle for Issue 4: idle, loading, success, error.
-type UiState = "idle" | "loading" | "success" | "error";
+const AppContent: React.FC = () => {
+  const { user, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>("catalog");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
-export default function App() {
-  const [state, setState] = useState<UiState>("idle");
-  const [categories, setCategories] = useState<Category[]>([]);
-  void categories;
+  // Keep active tab in sync with user role
+  useEffect(() => {
+    if (user) {
+      if (user.role === "CUSTOMER") {
+        setActiveTab("catalog");
+      } else if (user.role === "OPERATOR") {
+        setActiveTab("incoming-orders");
+      }
+    } else {
+      setCart([]);
+      setSelectedOrderId(null);
+    }
+  }, [user]);
 
-  async function handleCheck() {
-    // TODO(Issue 4): set loading, call checkSystem(), then either
-    //   - success: store categories and show Online + the list, or
-    //   - error: show Offline + a useful message.
-    setState("loading");
+  // Cart operations
+  const handleAddToCart = (product: Product, quantity: number) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.product.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.product.id === product.id
+            ? { ...item, quantity: Math.min(10, item.quantity + quantity) }
+            : item
+        );
+      }
+      return [...prev, { product, quantity }];
+    });
+  };
+
+  const handleUpdateQuantity = (productId: number, quantity: number) => {
+    if (quantity <= 0) {
+      handleRemoveItem(productId);
+      return;
+    }
+    setCart((prev) =>
+      prev.map((item) =>
+        item.product.id === productId
+          ? { ...item, quantity: Math.min(10, quantity) }
+          : item
+      )
+    );
+  };
+
+  const handleRemoveItem = (productId: number) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  };
+
+  const handleClearCart = () => {
+    setCart([]);
+  };
+
+  const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center min-vh-100">
+        <div className="text-center">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div className="text-muted small">Checking session...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
   }
 
   return (
-    <div className="container py-5" style={{ maxWidth: 640 }}>
-      <h1 className="h3 mb-4">
-        TokTickIT <span className="text-success">IT Service Desk</span>
-      </h1>
+    <div className="min-vh-100 bg-light">
+      <Navbar
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setSelectedOrderId(null);
+          setActiveTab(tab);
+        }}
+      />
 
-      <button className="btn btn-success" onClick={handleCheck} disabled={state === "loading"}>
-        {state === "loading" ? "Loading…" : "Check System"}
-      </button>
+      <main className="container py-4">
+        {user.role === "CUSTOMER" && (
+          <div>
+            {activeTab === "catalog" && (
+              <Catalog
+                onAddToCart={handleAddToCart}
+                cartItemCount={totalCartCount}
+                onGoToCheckout={() => setActiveTab("checkout")}
+              />
+            )}
 
-      {/* TODO(Issue 4): render loading / success (Online + categories) / error (Offline) states. */}
+            {activeTab === "checkout" && (
+              <Checkout
+                cart={cart}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemoveItem={handleRemoveItem}
+                onClearCart={handleClearCart}
+                onBackToCatalog={() => setActiveTab("catalog")}
+                onOrderCreated={(order: Order) => {
+                  setSelectedOrderId(order.id);
+                  setActiveTab("my-orders");
+                }}
+              />
+            )}
+
+            {activeTab === "my-orders" && !selectedOrderId && (
+              <MyOrders
+                onSelectOrder={(orderId) => setSelectedOrderId(orderId)}
+                onGoToCatalog={() => {
+                  setSelectedOrderId(null);
+                  setActiveTab("catalog");
+                }}
+              />
+            )}
+
+            {activeTab === "my-orders" && selectedOrderId && (
+              <OrderDetail
+                orderId={selectedOrderId}
+                onBack={() => setSelectedOrderId(null)}
+                backLabel="Back to My Orders"
+              />
+            )}
+          </div>
+        )}
+
+        {user.role === "OPERATOR" && (
+          <OperatorOrders />
+        )}
+      </main>
     </div>
+  );
+};
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
