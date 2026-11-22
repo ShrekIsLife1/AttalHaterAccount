@@ -2,23 +2,24 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { runSeed } from "../../prisma/seed.js";
 
 const prisma = getPrisma();
 
 describe("Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13)", () => {
   const customerCredentials = {
-    email: "customer1@unimerch.ac.th",
-    password: "Password123!"
+    email: "customer1@example.com",
+    password: process.env.SEED_PASSWORD || "password123"
   };
 
   const operatorCredentials = {
-    email: "operator1@unimerch.ac.th",
-    password: "Operator123!"
+    email: "operator1@example.com",
+    password: process.env.SEED_PASSWORD || "password123"
   };
 
   beforeAll(async () => {
-    // Ensure test users exist in database
     await prisma.$connect();
+    await runSeed();
   });
 
   afterAll(async () => {
@@ -61,7 +62,7 @@ describe("Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13)", () => {
       expect(res.body.user).toMatchObject({
         email: operatorCredentials.email,
         role: "OPERATOR",
-        name: "Ophelia Operator"
+        name: "Dave Operator"
       });
       expect(res.body.user).not.toHaveProperty("passwordHash");
     });
@@ -86,8 +87,8 @@ describe("Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13)", () => {
       const res = await request(app)
         .post("/api/auth/login")
         .send({
-          email: "nonexistent@unimerch.ac.th",
-          password: "Password123!"
+          email: "nonexistent@example.com",
+          password: "password123"
         });
 
       expect(res.status).toBe(401);
@@ -99,7 +100,7 @@ describe("Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13)", () => {
     it("returns HTTP 400 Bad Request when email or password is missing", async () => {
       const res = await request(app)
         .post("/api/auth/login")
-        .send({ email: "customer1@unimerch.ac.th" });
+        .send({ email: "customer1@example.com" });
 
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty("error");
@@ -128,10 +129,11 @@ describe("Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13)", () => {
         .post("/api/auth/login")
         .send(customerCredentials);
       const cookie = loginRes.headers["set-cookie"];
+      expect(cookie).toBeDefined();
 
       const meRes = await request(app)
         .get("/api/auth/me")
-        .set("Cookie", cookie);
+        .set("Cookie", cookie!);
 
       expect(meRes.status).toBe(200);
       expect(meRes.body.user).toMatchObject({
@@ -149,11 +151,12 @@ describe("Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13)", () => {
         .post("/api/auth/login")
         .send(customerCredentials);
       const cookie = loginRes.headers["set-cookie"];
+      expect(cookie).toBeDefined();
 
       // 2. Call logout
       const logoutRes = await request(app)
         .post("/api/auth/logout")
-        .set("Cookie", cookie);
+        .set("Cookie", cookie!);
 
       expect(logoutRes.status).toBe(200);
       expect(logoutRes.body).toHaveProperty("message");
@@ -165,9 +168,46 @@ describe("Authentication & Session RBAC (F-01 / AC-01..AC-04, AC-13)", () => {
       // 3. Subsequent /api/auth/me returns 401
       const meAfterRes = await request(app)
         .get("/api/auth/me")
-        .set("Cookie", cookie);
+        .set("Cookie", cookie!);
 
       expect(meAfterRes.status).toBe(401);
+    });
+  });
+
+  describe("TEST-16: RBAC Protection & Role Authorization (AC-13)", () => {
+    it("rejects unauthenticated request to operator-only route with HTTP 401", async () => {
+      const res = await request(app).get("/api/test/operator-only");
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty("error");
+    });
+
+    it("rejects customer access to operator-only route with HTTP 403 Forbidden", async () => {
+      const loginRes = await request(app)
+        .post("/api/auth/login")
+        .send(customerCredentials);
+      const cookie = loginRes.headers["set-cookie"];
+
+      const res = await request(app)
+        .get("/api/test/operator-only")
+        .set("Cookie", cookie!);
+
+      expect(res.status).toBe(403);
+      expect(res.body).toHaveProperty("error");
+      expect(res.body.error).toMatch(/insufficient permissions|forbidden|operator/i);
+    });
+
+    it("allows operator access to operator-only route with HTTP 200 OK", async () => {
+      const loginRes = await request(app)
+        .post("/api/auth/login")
+        .send(operatorCredentials);
+      const cookie = loginRes.headers["set-cookie"];
+
+      const res = await request(app)
+        .get("/api/test/operator-only")
+        .set("Cookie", cookie!);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("message", "Operator authorized");
     });
   });
 });

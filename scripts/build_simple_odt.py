@@ -14,6 +14,7 @@ img_arch = "docs/deliverable-1/evidence/issue-03_architecture-diagram.png"
 img_er = "docs/deliverable-1/evidence/issue-03_er-diagram.png"
 img_seed = "docs/deliverable-1/evidence/issue-06_seed_terminal.png"
 img_pers = "docs/deliverable-1/evidence/issue-06_persistence_test.png"
+img_auth = "docs/deliverable-1/evidence/issue-07_auth_test.png"
 
 with open(img_arch, "rb") as f:
     arch_bytes = f.read()
@@ -27,6 +28,9 @@ with open(img_seed, "rb") as f:
 with open(img_pers, "rb") as f:
     pers_bytes = f.read()
 
+with open(img_auth, "rb") as f:
+    auth_bytes = f.read()
+
 manifest_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.3">
  <manifest:file-entry manifest:full-path="/" manifest:version="1.3" manifest:media-type="application/vnd.oasis.opendocument.text"/>
@@ -37,6 +41,7 @@ manifest_xml = """<?xml version="1.0" encoding="UTF-8"?>
  <manifest:file-entry manifest:full-path="Pictures/issue-03_er-diagram.png" manifest:media-type="image/png"/>
  <manifest:file-entry manifest:full-path="Pictures/issue-06_seed_terminal.png" manifest:media-type="image/png"/>
  <manifest:file-entry manifest:full-path="Pictures/issue-06_persistence_test.png" manifest:media-type="image/png"/>
+ <manifest:file-entry manifest:full-path="Pictures/issue-07_auth_test.png" manifest:media-type="image/png"/>
 </manifest:manifest>
 """
 
@@ -235,14 +240,19 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.2 Automated Persistence &amp; Database Integrity Suite (AC-17 / TEST-21)</text:p>
+   <text:p text:style-name="SubsectionTitle">F.2 Automated Test Suite Results — Persistence &amp; Auth RBAC Suites (AC-01..04, AC-13, AC-17)</text:p>
    <table:table table:name="BoxF2">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
       <text:p text:style-name="BoxText">
-       <draw:frame draw:name="PersistenceTestTerminal" text:anchor-type="as-char" svg:width="16.5cm" svg:height="8.4cm">
+       <draw:frame draw:name="PersistenceTestTerminal" text:anchor-type="as-char" svg:width="16.5cm" svg:height="7.5cm">
         <draw:image xlink:href="Pictures/issue-06_persistence_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+       </draw:frame>
+      </text:p>
+      <text:p text:style-name="BoxText">
+       <draw:frame draw:name="AuthTestTerminal" text:anchor-type="as-char" svg:width="16.5cm" svg:height="8.8cm">
+        <draw:image xlink:href="Pictures/issue-07_auth_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
        </draw:frame>
       </text:p>
      </table:table-cell>
@@ -285,5 +295,6 @@ with zipfile.ZipFile(odt_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
     z.writestr("Pictures/issue-03_er-diagram.png", er_bytes)
     z.writestr("Pictures/issue-06_seed_terminal.png", seed_bytes)
     z.writestr("Pictures/issue-06_persistence_test.png", pers_bytes)
+    z.writestr("Pictures/issue-07_auth_test.png", auth_bytes)
 
 print(f"Generated ultra-simple Lab 3 report at {odt_path}")

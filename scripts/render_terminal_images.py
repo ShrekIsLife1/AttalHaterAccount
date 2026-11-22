@@ -94,3 +94,33 @@ test_lines = [
     ("   Duration  444ms (transform 40ms, setup 0ms, collect 53ms, tests 194ms)", "#aaaaaa")
 ]
 render_terminal("Terminal — Vitest Automated Persistence & Seed Suite (AC-17 / TEST-21)", test_lines, "docs/deliverable-1/evidence/issue-06_persistence_test.png")
+
+# 3. Auth and Session RBAC test output terminal
+auth_lines = [
+    ("$ cd server && npm test -- sprint-1/auth", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/auth", "#888888"),
+    ("", "#cccccc"),
+    ("stdout | tests/sprint-1/auth.api.test.ts > Authentication & Session RBAC (F-01)", "#888888"),
+    ("Seeding completed successfully: 5 users and 8 products upserted.", "#aaaaaa"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/auth.api.test.ts (12 tests) 560ms", "#27c93f"),
+    ("   ✓ TEST-01: Valid Login (AC-01) - logs in with valid customer credentials (200, HttpOnly sid, safe user)", "#27c93f"),
+    ("   ✓ TEST-01: Valid Login (AC-01) - logs in with valid operator credentials (OPERATOR role)", "#27c93f"),
+    ("   ✓ TEST-02: Invalid Credentials (AC-02) - returns HTTP 401 with generic error on invalid password", "#27c93f"),
+    ("   ✓ TEST-02: Invalid Credentials (AC-02) - returns HTTP 401 on non-existent email (no user enumeration)", "#27c93f"),
+    ("   ✓ TEST-02: Invalid Credentials (AC-02) - returns HTTP 400 Bad Request when email/password missing", "#27c93f"),
+    ("   ✓ TEST-03: Session Identity (AC-03) - returns HTTP 401 on missing session cookie", "#27c93f"),
+    ("   ✓ TEST-03: Session Identity (AC-03) - returns HTTP 401 on invalid/expired session token", "#27c93f"),
+    ("   ✓ TEST-03: Session Identity (AC-03) - returns current profile when valid session cookie provided", "#27c93f"),
+    ("   ✓ TEST-04: Logout & Invalidation (AC-04) - logs out, clears cookie, invalidates session in DB", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection (AC-13) - rejects unauthenticated request with HTTP 401", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection (AC-13) - rejects customer access to operator route with HTTP 403", "#27c93f"),
+    ("   ✓ TEST-16: RBAC Protection (AC-13) - allows operator access to operator route with HTTP 200", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  1 passed (1)", "#27c93f"),
+    ("      Tests  12 passed (12)", "#27c93f"),
+    ("   Duration  813ms (transform 60ms, setup 0ms, collect 149ms, tests 442ms)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Authentication & Session RBAC Suite (TEST-01..TEST-04, TEST-16)", auth_lines, "docs/deliverable-1/evidence/issue-07_auth_test.png")
