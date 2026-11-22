@@ -239,5 +239,38 @@ operator_lines = [
 ]
 render_terminal("Terminal — Vitest Operator Orders & Acceptance Suite (F-05 / AC-13..AC-16 / TEST-16..TEST-20)", operator_lines, "docs/deliverable-1/evidence/issue-12_operator_test.png")
 
+# 8. Authorization Hardening & Permission Matrix Suite (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08)
+auth_hardening_lines = [
+    ("$ cd server && npm test -- sprint-1/orders-access sprint-1/authorization", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/orders-access sprint-1/authorization --reporter=verbose", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/authorization.api.test.ts (18 tests) 680ms", "#27c93f"),
+    ("   ✓ 1. Unauthenticated Protection: rejects all protected endpoints with HTTP 401", "#27c93f"),
+    ("   ✓ 1. Unauthenticated Protection: rejects invalid/forged session cookies with HTTP 401", "#27c93f"),
+    ("   ✓ 2. Role-Based Segregation: Customer calling operator endpoints returns 403 Forbidden", "#27c93f"),
+    ("   ✓ 2. Role-Based Segregation: Operator calling customer endpoints returns 403 Forbidden", "#27c93f"),
+    ("   ✓ 2. Role-Based Segregation: Operator viewing customer order detail returns 200 OK", "#27c93f"),
+    ("   ✓ 3. Ownership Isolation: Customer requesting another customer's order returns 404 (no leak)", "#27c93f"),
+    ("   ✓ 4. Tampering Protection: client-forged prices/totals ignored, authoritative satang used", "#27c93f"),
+    ("   ✓ 5. Inactive Accounts: login rejected with 401 for deactivated accounts", "#27c93f"),
+    ("   ✓ 5. Session Lifecycle: active session immediately rejected on DB user deactivation", "#27c93f"),
+    ("   ✓ 5. Session Lifecycle: logout invalidates session and deletes DB row (subsequent 401)", "#27c93f"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/orders-access.api.test.ts (5 tests) 420ms", "#27c93f"),
+    ("   ✓ TEST-13: Customer lists only own orders, sorted newest first (HTTP 200)", "#27c93f"),
+    ("   ✓ TEST-13: Customer order list rejects unauthenticated requests with HTTP 401", "#27c93f"),
+    ("   ✓ TEST-15: Customer allowed to view own order detail (HTTP 200)", "#27c93f"),
+    ("   ✓ TEST-15: Cross-customer order access returns HTTP 404 Not Found (no metadata leak)", "#27c93f"),
+    ("   ✓ TEST-15: Non-existent order ID returns HTTP 404 Not Found", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  2 passed (2)", "#27c93f"),
+    ("      Tests  23 passed (23)", "#27c93f"),
+    ("   Duration  1.17s (transform 57ms, setup 0ms, collect 241ms, tests 680ms)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Cross-Cutting Authorization Hardening Suite (Issue #13)", auth_hardening_lines, "docs/deliverable-1/evidence/issue-13_authorization_test.png")
+
+
 
 

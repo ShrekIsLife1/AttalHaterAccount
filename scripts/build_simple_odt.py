@@ -19,6 +19,8 @@ images = {
     "catalog": "docs/deliverable-1/evidence/issue-09_catalog_test.png",
     "orders": "docs/deliverable-1/evidence/issue-10_orders_test.png",
     "ui": "docs/deliverable-1/evidence/issue-11_customer-ordering-ui-tests.png",
+    "operator": "docs/deliverable-1/evidence/issue-12_operator_test.png",
+    "auth_hardening": "docs/deliverable-1/evidence/issue-13_authorization_test.png",
 }
 
 img_data = {}
@@ -299,8 +301,36 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.7 Program Demonstrations (Scenarios S1 to S10)</text:p>
-   <table:table table:name="BoxF7">
+   <text:p text:style-name="SubsectionTitle">F.7 Operator Queue &amp; Acceptance Suite (Issue #12 / AC-13..16 / TEST-16..20)</text:p>
+   <table:table table:name="BoxF7a">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">
+       <draw:frame draw:name="OperatorOrdersTest" text:anchor-type="as-char" svg:width="16.5cm" svg:height="8.8cm">
+        <draw:image xlink:href="Pictures/issue-12_operator_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+       </draw:frame>
+      </text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+
+   <text:p text:style-name="SubsectionTitle">F.8 Authorization Hardening &amp; Cross-Cutting Security Suite (Issue #13 / AC-03, 12, 13, 17 / BR-05, 07, 08)</text:p>
+   <table:table table:name="BoxF8a">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">
+       <draw:frame draw:name="AuthHardeningTest" text:anchor-type="as-char" svg:width="16.5cm" svg:height="9.5cm">
+        <draw:image xlink:href="Pictures/issue-13_authorization_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+       </draw:frame>
+      </text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+
+   <text:p text:style-name="SubsectionTitle">F.9 Program Demonstrations (Scenarios S1 to S10)</text:p>
+   <table:table table:name="BoxF9">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
@@ -309,8 +339,8 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.8 Engineering Workflow &amp; Contribution History</text:p>
-   <table:table table:name="BoxF8">
+   <text:p text:style-name="SubsectionTitle">F.10 Engineering Workflow &amp; Contribution History</text:p>
+   <table:table table:name="BoxF10">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">

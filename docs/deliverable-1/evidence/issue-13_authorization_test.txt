@@ -1,0 +1,42 @@
+
+> unimerch-server@1.0.0 test
+> vitest run sprint-1/orders-access sprint-1/authorization --reporter=verbose
+
+
+ RUN  v2.1.9 /home/meownux/Documents/SWE/Vinted/AttalHaterAccount/server
+
+stdout | tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 1. Unauthenticated Access Protection (HTTP 401) > rejects GET /api/auth/me without session cookie
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 1. Unauthenticated Access Protection (HTTP 401) > rejects POST /api/orders without session cookie
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 1. Unauthenticated Access Protection (HTTP 401) > rejects GET /api/orders without session cookie
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 1. Unauthenticated Access Protection (HTTP 401) > rejects GET /api/orders/:id without session cookie
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 1. Unauthenticated Access Protection (HTTP 401) > rejects GET /api/operator/orders without session cookie
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 1. Unauthenticated Access Protection (HTTP 401) > rejects PATCH /api/operator/orders/:id/accept without session cookie
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 1. Unauthenticated Access Protection (HTTP 401) > rejects request with forged / invalid cookie token
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 2. Role-Based Access Control Segregation (HTTP 403) > Customer calling operator queue GET /api/operator/orders returns 403 Forbidden
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 2. Role-Based Access Control Segregation (HTTP 403) > Customer calling operator accept PATCH /api/operator/orders/:id/accept returns 403 Forbidden
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 2. Role-Based Access Control Segregation (HTTP 403) > Operator attempting customer order creation POST /api/orders returns 403 Forbidden
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 2. Role-Based Access Control Segregation (HTTP 403) > Operator attempting customer order list GET /api/orders returns 403 Forbidden
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 2. Role-Based Access Control Segregation (HTTP 403) > Operator is allowed to view any customer order detail GET /api/orders/:id (HTTP 200)
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 3. Customer Order Ownership Isolation (AC-12 / NFR-01 / BR-05) > Customer A requesting Customer B's order returns 404 Not Found without leaking metadata
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 3. Customer Order Ownership Isolation (AC-12 / NFR-01 / BR-05) > Customer B requesting Customer A's order returns identical generic 404
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 4. Tampering Protection with Server-Authoritative Totals (AC-07 / BR-03) > ignores forged prices and totals submitted by the client and uses database prices
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 5. Inactive Accounts & Session Lifecycle Invalidation (BR-07, BR-08) > rejects login attempt for a deactivated account with generic 401
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 5. Inactive Accounts & Session Lifecycle Invalidation (BR-07, BR-08) > rejects subsequent requests immediately when an active user account is deactivated in database
+ ✓ tests/sprint-1/authorization.api.test.ts > Issue #13: Cross-Cutting Authorization Hardening & Permission Matrix (AC-03, AC-12, AC-13, AC-17 / NFR-01, BR-05, BR-07, BR-08) > 5. Inactive Accounts & Session Lifecycle Invalidation (BR-07, BR-08) > rejects requests after user logs out and deletes session from database
+stdout | tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-13: GET /api/orders — Customer lists only own orders (AC-11) > returns HTTP 200 with only Customer 1's orders, sorted newest first
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-13: GET /api/orders — Customer lists only own orders (AC-11) > returns HTTP 401 when calling GET /api/orders unauthenticated
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-15: GET /api/orders/:id — Ownership isolation (AC-12 / NFR-01) > allows Customer 1 to view their own order detail
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-15: GET /api/orders/:id — Ownership isolation (AC-12 / NFR-01) > returns HTTP 404 Not Found when Customer 1 queries Customer 2's order (no data leakage)
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-15: GET /api/orders/:id — Ownership isolation (AC-12 / NFR-01) > returns HTTP 404 for non-existent order ID
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  17:59:00
+   Duration  1.17s (transform 57ms, setup 0ms, collect 241ms, tests 680ms, environment 0ms, prepare 57ms)
+
