@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import { getPrisma } from "./prisma.js";
 import { authMiddleware, requireRole } from "./middleware/auth.js";
 import { authRouter } from "./routes/auth.js";
+import { productsRouter } from "./routes/products.js";
 
 // Initialize Prisma
 void getPrisma();
@@ -20,6 +21,7 @@ app.use(authMiddleware);
 
 // Routes
 app.use("/api/auth", authRouter);
+app.use("/api/products", productsRouter);
 
 app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({ status: "ok", service: "TokTickIT API" });

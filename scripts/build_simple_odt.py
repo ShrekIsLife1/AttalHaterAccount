@@ -10,38 +10,32 @@ import os, zipfile
 odt_path = "docs/deliverable-1/deliverable-1.odt"
 
 # Images to embed
-img_arch = "docs/deliverable-1/evidence/issue-03_architecture-diagram.png"
-img_er = "docs/deliverable-1/evidence/issue-03_er-diagram.png"
-img_seed = "docs/deliverable-1/evidence/issue-06_seed_terminal.png"
-img_pers = "docs/deliverable-1/evidence/issue-06_persistence_test.png"
-img_auth = "docs/deliverable-1/evidence/issue-07_auth_test.png"
+images = {
+    "arch": "docs/deliverable-1/evidence/issue-03_architecture-diagram.png",
+    "er": "docs/deliverable-1/evidence/issue-03_er-diagram.png",
+    "seed": "docs/deliverable-1/evidence/issue-06_seed_terminal.png",
+    "pers": "docs/deliverable-1/evidence/issue-06_persistence_test.png",
+    "auth": "docs/deliverable-1/evidence/issue-07_auth_test.png",
+    "catalog": "docs/deliverable-1/evidence/issue-09_catalog_test.png",
+}
 
-with open(img_arch, "rb") as f:
-    arch_bytes = f.read()
+img_data = {}
+for key, path in images.items():
+    with open(path, "rb") as f:
+        img_data[key] = f.read()
 
-with open(img_er, "rb") as f:
-    er_bytes = f.read()
+manifest_entries = "\n".join(
+    f' <manifest:file-entry manifest:full-path="Pictures/{os.path.basename(images[k])}" manifest:media-type="image/png"/>'
+    for k in images
+)
 
-with open(img_seed, "rb") as f:
-    seed_bytes = f.read()
-
-with open(img_pers, "rb") as f:
-    pers_bytes = f.read()
-
-with open(img_auth, "rb") as f:
-    auth_bytes = f.read()
-
-manifest_xml = """<?xml version="1.0" encoding="UTF-8"?>
+manifest_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.3">
  <manifest:file-entry manifest:full-path="/" manifest:version="1.3" manifest:media-type="application/vnd.oasis.opendocument.text"/>
  <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>
  <manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>
  <manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>
- <manifest:file-entry manifest:full-path="Pictures/issue-03_architecture-diagram.png" manifest:media-type="image/png"/>
- <manifest:file-entry manifest:full-path="Pictures/issue-03_er-diagram.png" manifest:media-type="image/png"/>
- <manifest:file-entry manifest:full-path="Pictures/issue-06_seed_terminal.png" manifest:media-type="image/png"/>
- <manifest:file-entry manifest:full-path="Pictures/issue-06_persistence_test.png" manifest:media-type="image/png"/>
- <manifest:file-entry manifest:full-path="Pictures/issue-07_auth_test.png" manifest:media-type="image/png"/>
+{manifest_entries}
 </manifest:manifest>
 """
 
@@ -123,7 +117,6 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
 
    <!-- ANSWER PART A -->
    <text:p text:style-name="SectionTitle">Answer Part A — SRS and Product Scope (10 pts)</text:p>
-   <text:p text:style-name="LinkLabel">Link to docs/srs.md: _______________________________________________________</text:p>
    <text:p text:style-name="SubsectionTitle">A.1 Rendered srs.md — Context, Actors, FR-01…13, BR-01…08, NFR-01…06, Decisions</text:p>
    <table:table table:name="BoxA">
     <table:table-column/>
@@ -136,8 +129,6 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
 
    <!-- ANSWER PART B -->
    <text:p text:style-name="SectionTitle">Answer Part B — Feature Inventory and Traceability (10 pts)</text:p>
-   <text:p text:style-name="LinkLabel">Link to docs/features.md: _______________________________________________________</text:p>
-   <text:p text:style-name="LinkLabel">Link to docs/traceability.md: ___________________________________________________</text:p>
    <text:p text:style-name="SubsectionTitle">B.1 Rendered features.md &amp; traceability.md — Feature Inventory &amp; RTM Matrix</text:p>
    <table:table table:name="BoxB">
     <table:table-column/>
@@ -151,7 +142,6 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
 
    <!-- ANSWER PART C -->
    <text:p text:style-name="SectionTitle">Answer Part C — System-Level SDS (15 pts)</text:p>
-   <text:p text:style-name="LinkLabel">Link to docs/system-sds.md: ___________________________________________________</text:p>
    <text:p text:style-name="SubsectionTitle">C.1 Architecture Diagram — Three-Tier Client-Server Architecture</text:p>
    <table:table table:name="BoxC1">
     <table:table-column/>
@@ -166,7 +156,7 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">C.2 Entity-Relationship (ER) Schema Diagram — PostgreSQL Entities &amp; Relations</text:p>
+   <text:p text:style-name="SubsectionTitle">C.2 Entity-Relationship (ER) Schema Diagram</text:p>
    <table:table table:name="BoxC2">
     <table:table-column/>
     <table:table-row>
@@ -192,7 +182,6 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
 
    <!-- ANSWER PART D -->
    <text:p text:style-name="SectionTitle">Answer Part D — Three-Sprint Plan (5 pts)</text:p>
-   <text:p text:style-name="LinkLabel">Link to docs/sprints/plan.md: ___________________________________________________</text:p>
    <text:p text:style-name="SubsectionTitle">D.1 Rendered plan.md — Sprint Goals, Feature Allocation &amp; Feasibility</text:p>
    <table:table table:name="BoxD">
     <table:table-column/>
@@ -205,7 +194,6 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
 
    <!-- ANSWER PART E -->
    <text:p text:style-name="SectionTitle">Answer Part E — Sprint 1 Engineering Contracts (20 pts)</text:p>
-   <text:p text:style-name="LinkLabel">Link to docs/sprints/sprint-1/: _________________________________________________</text:p>
    <text:p text:style-name="SubsectionTitle">E.1 Rendered Feature Contracts (F-01…F-05), STS Table &amp; Definition of Done</text:p>
    <table:table table:name="BoxE">
     <table:table-column/>
@@ -224,9 +212,8 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
 
    <!-- ANSWER PART F -->
    <text:p text:style-name="SectionTitle">Answer Part F — Working Sprint 1 and Verification (20 pts)</text:p>
-   <text:p text:style-name="LinkLabel">Link to README.md setup guide: __________________________________________________</text:p>
-   
-   <text:p text:style-name="SubsectionTitle">F.1 Database Scaffold &amp; Idempotent Seeding Execution (Issue #6 / AC-17)</text:p>
+
+   <text:p text:style-name="SubsectionTitle">F.1 Database Scaffold &amp; Idempotent Seeding (Issue #6 / AC-17)</text:p>
    <table:table table:name="BoxF1">
     <table:table-column/>
     <table:table-row>
@@ -240,18 +227,27 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.2 Automated Test Suite Results — Persistence &amp; Auth RBAC Suites (AC-01..04, AC-13, AC-17)</text:p>
-   <table:table table:name="BoxF2">
+   <text:p text:style-name="SubsectionTitle">F.2 Persistence Test Suite (AC-17 / TEST-21)</text:p>
+   <table:table table:name="BoxF2a">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
       <text:p text:style-name="BoxText">
-       <draw:frame draw:name="PersistenceTestTerminal" text:anchor-type="as-char" svg:width="16.5cm" svg:height="7.5cm">
+       <draw:frame draw:name="PersistenceTest" text:anchor-type="as-char" svg:width="16.5cm" svg:height="7.5cm">
         <draw:image xlink:href="Pictures/issue-06_persistence_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
        </draw:frame>
       </text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+
+   <text:p text:style-name="SubsectionTitle">F.3 Authentication &amp; Session RBAC Test Suite (TEST-01..04, TEST-16)</text:p>
+   <table:table table:name="BoxF3">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
       <text:p text:style-name="BoxText">
-       <draw:frame draw:name="AuthTestTerminal" text:anchor-type="as-char" svg:width="16.5cm" svg:height="8.8cm">
+       <draw:frame draw:name="AuthTest" text:anchor-type="as-char" svg:width="16.5cm" svg:height="8.8cm">
         <draw:image xlink:href="Pictures/issue-07_auth_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
        </draw:frame>
       </text:p>
@@ -259,18 +255,32 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.3 Program Demonstrations (Screenshots S1 to S10)</text:p>
-   <table:table table:name="BoxF3">
+   <text:p text:style-name="SubsectionTitle">F.4 Catalog API Test Suite (F-02 / AC-05 / TEST-05)</text:p>
+   <table:table table:name="BoxF4">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
-      <text:p text:style-name="BoxText">[Working UI Scenarios S1 to S10: Login, Catalog, Cart/Checkout, My Orders, Operator Queue, Order Accept, 409 guard, 403/404 restrictions]</text:p>
+      <text:p text:style-name="BoxText">
+       <draw:frame draw:name="CatalogTest" text:anchor-type="as-char" svg:width="16.5cm" svg:height="7.0cm">
+        <draw:image xlink:href="Pictures/issue-09_catalog_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+       </draw:frame>
+      </text:p>
      </table:table-cell>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.4 Engineering Workflow &amp; Contribution History</text:p>
-   <table:table table:name="BoxF4">
+   <text:p text:style-name="SubsectionTitle">F.5 Program Demonstrations (Scenarios S1 to S10)</text:p>
+   <table:table table:name="BoxF5">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">[Working UI Scenarios: Login, Catalog, Cart/Checkout, My Orders, Operator Queue, Order Accept — screenshots added in release issue #15]</text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+
+   <text:p text:style-name="SubsectionTitle">F.6 Engineering Workflow &amp; Contribution History</text:p>
+   <table:table table:name="BoxF6">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
@@ -291,10 +301,7 @@ with zipfile.ZipFile(odt_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
     z.writestr("meta.xml", meta_xml)
     z.writestr("styles.xml", styles_xml)
     z.writestr("content.xml", content_xml)
-    z.writestr("Pictures/issue-03_architecture-diagram.png", arch_bytes)
-    z.writestr("Pictures/issue-03_er-diagram.png", er_bytes)
-    z.writestr("Pictures/issue-06_seed_terminal.png", seed_bytes)
-    z.writestr("Pictures/issue-06_persistence_test.png", pers_bytes)
-    z.writestr("Pictures/issue-07_auth_test.png", auth_bytes)
+    for key, path in images.items():
+        z.writestr(f"Pictures/{os.path.basename(path)}", img_data[key])
 
 print(f"Generated ultra-simple Lab 3 report at {odt_path}")

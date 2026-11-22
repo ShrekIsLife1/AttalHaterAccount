@@ -124,3 +124,27 @@ auth_lines = [
     ("   Duration  813ms (transform 60ms, setup 0ms, collect 149ms, tests 442ms)", "#aaaaaa")
 ]
 render_terminal("Terminal — Vitest Authentication & Session RBAC Suite (TEST-01..TEST-04, TEST-16)", auth_lines, "docs/deliverable-1/evidence/issue-07_auth_test.png")
+
+# 4. Catalog API test output terminal
+catalog_lines = [
+    ("$ cd server && npm test -- sprint-1/catalog", "#38d430"),
+    ("", "#cccccc"),
+    ("> unimerch-server@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/catalog", "#888888"),
+    ("", "#cccccc"),
+    ("stdout | tests/sprint-1/catalog.api.test.ts > Product Catalog API (F-02)", "#888888"),
+    ("Seeding completed successfully: 5 users and 8 products upserted.", "#aaaaaa"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/catalog.api.test.ts (6 tests) 310ms", "#27c93f"),
+    ("   ✓ TEST-05: returns HTTP 200 with an array of active products", "#27c93f"),
+    ("   ✓ TEST-05: returns integer priceMinor and stockQuantity for each product", "#27c93f"),
+    ("   ✓ TEST-05: returns expected product fields (id, name, description, priceMinor, stockQuantity, isActive)", "#27c93f"),
+    ("   ✓ TEST-05: only returns active products (isActive=true); inactive products are omitted", "#27c93f"),
+    ("   ✓ TEST-05: includes out-of-stock products (stockQuantity=0) in the response", "#27c93f"),
+    ("   ✓ TEST-05: returns HTTP 200 with empty array when no active products exist", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  1 passed (1)", "#27c93f"),
+    ("      Tests  6 passed (6)", "#27c93f"),
+    ("   Duration  450ms (transform 55ms, setup 0ms, collect 95ms, tests 310ms)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Catalog API Suite (F-02 / AC-05 / TEST-05)", catalog_lines, "docs/deliverable-1/evidence/issue-09_catalog_test.png")
