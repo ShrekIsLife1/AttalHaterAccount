@@ -8,7 +8,10 @@ import * as api from "../../src/api.js";
 vi.mock("../../src/api.js", () => ({
   login: vi.fn(),
   getMe: vi.fn(),
-  logout: vi.fn()
+  logout: vi.fn(),
+  getProducts: vi.fn().mockResolvedValue([]),
+  getMyOrders: vi.fn().mockResolvedValue([]),
+  formatTHB: (minor: number) => `฿${(minor / 100).toFixed(2)}`,
 }));
 
 describe("Issue #8: Login UI and Authenticated Shell", () => {

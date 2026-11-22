@@ -376,20 +376,21 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 | # | Scenario | Feature/AC | Role | Start conditions | Steps | Expected | Actual | Evidence file | Status | Issue |
 |---|---|---|---|---|---|---|---|---|---|---|
 | S1 | Login | AC-01, AC-18 | Customer | Seeded DB | `POST /api/auth/login` and React Login UI form submission | HTTP 200, sets `sid` cookie, renders role-appropriate navigation (Customer sees Catalog & My Orders; Operator sees Incoming Orders) | Verified via Vitest suite (6 tests pass) & Supertest suite | `docs/deliverable-1/evidence/issue-08_AC-18_login-ui-tests.txt` | ✅ | #7, #8 |
-| S2 | Catalog listing — active products with stock badges | AC-05 | Customer | Seeded DB (8 products: 6 active, 2 inactive) | `GET /api/products` (no session required) | HTTP 200, array of active products only, each with integer `priceMinor`, `stockQuantity` ≥ 0, `isActive: true`; inactive products absent | Verified via Supertest suite (6/6 pass) | `docs/deliverable-1/evidence/issue-09_catalog-test.txt` | ✅ | #9 |
+| S2 | Normal order journey + persisted retrieval | AC-05, AC-06, AC-11 | Customer | Seeded DB & authenticated session | Browse catalog → Add 2 items to cart → Navigate to Checkout → Verify estimated total → Submit order → Inspect returned Order Details with server-computed satang totals → Navigate to My Orders and reopen details | HTTP 201 Created on submit; order persisted in database; order detail displays snapshot unit prices and total; My Orders shows order # with status PLACED | Verified via Vitest component suite (Checkout: 4/4 pass, MyOrders: 5/5 pass) & API suite | `docs/deliverable-1/evidence/issue-11_customer-ordering-ui-tests.png` | ✅ | #11 |
 | S3 | DB proof (immutable price snapshots & authoritative pricing) | AC-06, AC-07, AC-10 | Customer | Authenticated Customer session | Place order with 2 items, verify integer satang totals; mutate catalog prices directly in DB; fetch `/api/orders/:id` | HTTP 200; historical `unitPriceAtOrder` preserved exactly as ordered, ignoring catalog price mutation | Verified via Supertest & Vitest (10/10 pass) | `docs/deliverable-1/evidence/issue-10_orders_test.png` | ✅ | #10 |
 | S4 | Rule rejection (invalid qty, duplicates, inactive/stockout) | AC-08, AC-09 | Customer | Authenticated Customer session | Submit order with non-integer qty, qty > 10, duplicate items, inactive item, or stockout | HTTP 400 Bad Request; atomic rollback causes zero DB order creations and zero stock decrements | Verified via Supertest & Vitest (10/10 pass) | `docs/deliverable-1/evidence/issue-10_orders_test.png` | ✅ | #10 |
 | S5 | Operator accepts order | AC-14, AC-15 | Operator | | | | | | ⬜ | #12 |
 | S6 | Invalid transition (409) | AC-16 | Operator | | | | | | ⬜ | #12 |
 | S7 | Forbidden role operation | AC-13 | Customer | Authenticated Customer session | Access operator-only route | HTTP 403 Forbidden with permission error | Verified via Supertest suite | `docs/deliverable-1/evidence/issue-07_auth_test.png` | ✅ | #7, #12, #13 |
-| S8 | Ownership restriction | AC-12 | Customer | | | | | | ⬜ | #13 |
+| S8 | Ownership restriction | AC-12 | Customer | Customer 1 & Customer 2 authenticated sessions with placed orders | Customer 1 invokes `GET /api/orders/:idCustomer2` | HTTP 404 Not Found with generic error payload; zero metadata leaked | Verified via Supertest suite (3/3 pass) | `docs/deliverable-1/evidence/issue-11_orders-access-test.txt` | ✅ | #11 |
 | S9 | Unauthenticated access | AC-03 | — | No session cookie | `GET /api/auth/me` without cookie | HTTP 401 Unauthorized with safe error | Verified via Supertest suite | `docs/deliverable-1/evidence/issue-07_auth_test.png` | ✅ | #7, #13 |
 | S10 | Logout | AC-04 | Customer | Active session | `POST /api/auth/logout` followed by `/me` | HTTP 200, clears `sid`, subsequent `/me` gives 401 | Verified via Supertest suite | `docs/deliverable-1/evidence/issue-07_auth_test.png` | ✅ | #7 |
 ### F.3 Build and automated test results
 - Commands and tested commit: `npm test` (Vitest v2.1.9 on client and server)
-- Passed / failed / skipped counts: 48 passed, 0 failed, 1 skipped (server: 42 passed, client: 6 passed)
+- Passed / failed / skipped counts: 65 passed, 0 failed, 1 skipped (server: 47 passed, client: 18 passed)
 
 ![Automated Test Execution — Orders & Pricing Engine (TEST-07..TEST-12)](evidence/issue-10_orders_test.png)
+![Automated Test Execution — Customer Ordering UI Suite (F-02, F-03, F-04 / TEST-06, TEST-14)](evidence/issue-11_customer-ordering-ui-tests.png)
 
 | AC | Planned TEST | Actual test file / name | Level | Result | Issue |
 |---|---|---|---|---|---|
@@ -398,12 +399,17 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 | **AC-03** | TEST-03 | `server/tests/sprint-1/auth.api.test.ts` (Session identity & route protection: missing cookie, invalid token, profile) | API | ✅ PASS (3/3) | #7 |
 | **AC-04** | TEST-04 | `server/tests/sprint-1/auth.api.test.ts` (Logout & invalidation: cookie clear, DB session deletion, subsequent 401) | API | ✅ PASS (1/1) | #7 |
 | **AC-05** | TEST-05 | `server/tests/sprint-1/catalog.api.test.ts` (Active product catalog listing: active filter, priceMinor, stock status) | API | ✅ PASS (6/6) | #9 |
+| **AC-05** | TEST-06 | `client/tests/sprint-1/Catalog.test.tsx` (Product catalog grid: formatted THB prices, stock badges, add to cart) | UI | ✅ PASS (2/2) | #11 |
 | **AC-06** | TEST-07 | `server/tests/sprint-1/orders-create.api.test.ts` (Multi-item order placement & atomic stock decrement) | API | ✅ PASS (1/1) | #10 |
 | **AC-07** | TEST-08 | `server/tests/sprint-1/orders-create.api.test.ts` (Authoritative server pricing, client tampering ignored) | API | ✅ PASS (1/1) | #10 |
 | **AC-08** | TEST-10 | `server/tests/sprint-1/orders-create.api.test.ts` (Constraint validation: empty items, invalid qty, duplicates) | API | ✅ PASS (3/3) | #10 |
 | **AC-09** | TEST-11 | `server/tests/sprint-1/orders-create.api.test.ts` (Rejection on inactive product or stockout with rollback) | API | ✅ PASS (2/2) | #10 |
 | **AC-10** | TEST-12 | `server/tests/sprint-1/orders-create.api.test.ts` (Historical price snapshot immutability across catalog updates) | API | ✅ PASS (1/1) | #10 |
+| **AC-06..10** | TEST-07..10 | `client/tests/sprint-1/Checkout.test.tsx` (Checkout table, estimated total, busy state, stock rejection, order confirmation) | UI | ✅ PASS (4/4) | #11 |
 | **BR-01..06** | TEST-09 | `server/tests/sprint-1/orders-pricing.unit.test.ts` (Pure domain pricing engine: satang calculation, bounds, stock checks) | Domain Unit | ✅ PASS (9/9) | #10 |
+| **AC-11** | TEST-13 | `server/tests/sprint-1/orders-access.api.test.ts` (Customer lists only own orders, newest first) | API | ✅ PASS (2/2) | #11 |
+| **AC-11** | TEST-14 | `client/tests/sprint-1/MyOrders.test.tsx` (My Orders list: loading, populated list, order details link, empty/error states) | UI | ✅ PASS (5/5) | #11 |
+| **AC-12** | TEST-15 | `server/tests/sprint-1/orders-access.api.test.ts` (Ownership isolation: cross-customer order access returns 404 without data leak) | API | ✅ PASS (3/3) | #11 |
 | **AC-13** | TEST-16 | `server/tests/sprint-1/auth.api.test.ts` (RBAC protection: unauth 401, customer forbidden 403, operator allowed 200) | API | ✅ PASS (3/3) | #7 |
 | **AC-17** | TEST-21 | `server/tests/sprint-1/persistence.api.test.ts` (idempotent seed, relational persistence, schema validation) | Persistence | ✅ PASS (4/4) | #6 |
 | **AC-18** | TEST-22, TEST-23 | `client/tests/sprint-1/Login.test.tsx` (Login form, busy state, generic error, role-based nav, logout) | UI | ✅ PASS (6/6) | #8 |
@@ -448,7 +454,44 @@ export function calculateOrderPricing(
 }
 ```
 
-- Excerpt 2 (ownership restriction): ⬜ (#13)
+#### Excerpt 2: Customer Order Ownership Isolation & Non-Enumeration Enforcement (TEST-15 / AC-12 / BR-05, NFR-01)
+```typescript
+// server/src/routes/orders.ts — Enforcing ownership isolation on order lookup
+ordersRouter.get("/:id", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid order ID" });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // RBAC & Ownership Isolation (AC-12 / NFR-01):
+    // CUSTOMER can only view their own order; if different customer, return 404 to avoid leaking existence.
+    // OPERATOR can view any order.
+    if (req.user!.role === "CUSTOMER" && order.customerId !== req.user!.id) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    return res.status(200).json({ order });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to retrieve order: " + (err?.message || "Internal error") });
+  }
+});
+```
 - TDD evidence (failing → passing, commit hashes):
   - **Issue #7 (Auth & Session RBAC):** Failing test commit `cdc98d8` (`test: issue #7 - add failing API integration tests...`) → Passing implementation commit `fec3f9b` (`feat: issue #7 - implement session authentication...`) | ✅ Proven
   - **Issue #9 (Product Catalog API):** Failing test commit `5436520` (`test: issue #9 - add failing catalog API tests...`) → Passing implementation commit `8f88c0a` (`feat: issue #9 - implement product catalog API...`) | ✅ Proven
@@ -467,7 +510,8 @@ export function calculateOrderPricing(
 | #7 | F-01 / AC-01..AC-04, AC-13 (Session authentication, login, logout, me, and RBAC middleware) | `issue/07-auth-session-rbac` | Cl | Ba | Reviewed session authentication, bcrypt verification, HttpOnly cookie lifecycle, and RBAC middleware | PR #16 (merged) | via release PR |
 | #8 | F-01 / AC-18 (Login UI, busy state, generic error, role-conditional navigation, and session clearing on logout) | `feature/08-login-ui` | Ba | Cl | Reviewed React AuthContext, Login component, Navbar, Vitest suite | PR #18 (merged) | via release PR |
 | #9 | F-02 / AC-05 (Product Catalog API: GET /api/products, active filtering, priceMinor, stock availability) | `issue/09-catalog-api` | Cl | Ba | Checked public endpoint, active-only filter, and integer minor price conversion | PR #20 (merged) | via release PR |
-| #10 | F-03 / AC-06..AC-10, BR-01..BR-06 (Order Placement API, server pricing, atomic stock decrement, price snapshots) | `feature/10-place-order-api` | Ba | Cl | Reviewed pure domain pricing function, atomic transaction boundary, and stock decrement | PR (pending) | via release PR |
+| #10 | F-03 / AC-06..AC-10, BR-01..BR-06 (Order Placement API, server pricing, atomic stock decrement, price snapshots) | `feature/10-place-order-api` | Ba | Cl | Reviewed pure domain pricing function, atomic transaction boundary, and stock decrement | PR #23 (merged) | via release PR |
+| #11 | F-02, F-03, F-04 / AC-05, AC-06..10, AC-11, AC-12 (Customer ordering UI: Catalog, Cart, Checkout, My Orders, Order detail, and ownership isolation) | `issue/11-customer-order-ui` | Cl | Ba | (Pending PR review) | PR (pending) | via release PR |
 
 History sequence (contract → tests → implementation):
 | Date | Commit | What |
@@ -483,18 +527,18 @@ History sequence (contract → tests → implementation):
 | 2026-11-22 | `fec3f9b` | feat: issue #7 - implement session authentication, login, logout, me, and RBAC middleware |
 | 2026-11-22 | `5436520` | test: issue #9 - add failing catalog API tests for product listing and active filtering (TEST-05 / AC-05) |
 | 2026-11-22 | `8f88c0a` | feat: issue #9 - implement product catalog API (GET /api/products, public, active-only filter) |
-| 2026-11-22 | pending | test: issue #10 - add failing tests for pricing engine and order creation API (TEST-07..TEST-12) |
-| 2026-11-22 | pending | feat: issue #10 - implement pure domain pricing, atomic order placement, and stock decrement |
+| 2026-11-22 | `8ade73a` | test: issue #10 - add failing tests for pricing engine and order creation API (TEST-07..TEST-12) |
+| 2026-11-22 | pending | feat: issue #11 - customer ordering UI, checkout, order detail, and My Orders views |
 
 Board status screenshot: ⬜ (#15)   Release PR / tag: ⬜ (#15)
 ### F.5 Contributions, AI use, limitations
 | Student | Issues/PRs authored | PRs reviewed | Pair work |
 |---|---|---|---|
-| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS), #6 (Database scaffold, migrations, seed & persistence), #7 (Backend auth, session & RBAC middleware), #9 (Catalog API, product listing, active filter) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewed Engineering contracts), #8 (Reviewed Login UI), #10 (Reviewed Order creation API & pricing engine) | Architecture & domain design alignment, schema validation |
+| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS), #6 (Database scaffold, migrations, seed & persistence), #7 (Backend auth, session & RBAC middleware), #9 (Catalog API, product listing, active filter), #11 (Customer ordering UI: Catalog, Checkout, My Orders, Order Detail) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewed Engineering contracts), #8 (Reviewed Login UI), #10 (Reviewed Order creation API & pricing engine) | Architecture & domain design alignment, schema validation |
 | Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS), #8 (Login UI & Authenticated Shell), #10 (Order creation API, pricing engine & atomic stock decrement) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8), #6 (Reviewed PR #14), #7 (Reviewed PR #16), #9 (Reviewed PR #20) | Architecture & domain design alignment, schema validation |
 
 AI-use declaration:
-- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Assisted Ba with establishing the three-sprint roadmap, drafting `docs/sprints/plan.md`, formatting the dependency graph, and documenting Part D in `PDF_DRAFT.md` (`#4`). Assisted Ba with writing feature engineering contracts (`F-01` to `F-05`), compiling the complete Software Test Specification (`TEST-01` to `TEST-26`), establishing the Product Definition of Done, and documenting Part E in `PDF_DRAFT.md` (`#5`). Assisted Cl with configuring Prisma ORM, authoring migrations and idempotent seed scripts, and implementing persistence test suite for AC-17 (`#6`). Assisted Cl with TDD test authoring (TEST-01..04, TEST-16), session management implementation with SHA-256 token hashing, HttpOnly cookie lifecycle, and RBAC middleware for F-01 (`#7`). Assisted Ba with developing the React authentication context (`AuthContext.tsx`), Login component with busy indicator and generic error handling (`Login.tsx`), role-segregated navigation bar (`Navbar.tsx`), and automated component testing in Vitest (`Login.test.tsx`) for Issue #8. Assisted Cl with authoring catalog API test suite (TEST-05 / AC-05), implementing `GET /api/products` with Prisma active-only filter, public access, and integer minor-unit response for F-02 Issue #9. Assisted Ba with authoring TDD test suites (`orders-pricing.unit.test.ts`, `orders-create.api.test.ts`), implementing pure domain pricing function (`calculateOrderPricing` with satang calculation and business constraints), and creating atomic order placement transaction with inventory decrement in `server/src/routes/orders.ts` for F-03 Issue #10. Reviewed and verified by Ba and Cl.
+- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Assisted Ba with establishing the three-sprint roadmap, drafting `docs/sprints/plan.md`, formatting the dependency graph, and documenting Part D in `PDF_DRAFT.md` (`#4`). Assisted Ba with writing feature engineering contracts (`F-01` to `F-05`), compiling the complete Software Test Specification (`TEST-01` to `TEST-26`), establishing the Product Definition of Done, and documenting Part E in `PDF_DRAFT.md` (`#5`). Assisted Cl with configuring Prisma ORM, authoring migrations and idempotent seed scripts, and implementing persistence test suite for AC-17 (`#6`). Assisted Cl with TDD test authoring (TEST-01..04, TEST-16), session management implementation with SHA-256 token hashing, HttpOnly cookie lifecycle, and RBAC middleware for F-01 (`#7`). Assisted Ba with developing the React authentication context (`AuthContext.tsx`), Login component with busy indicator and generic error handling (`Login.tsx`), role-segregated navigation bar (`Navbar.tsx`), and automated component testing in Vitest (`Login.test.tsx`) for Issue #8. Assisted Cl with authoring catalog API test suite (TEST-05 / AC-05), implementing `GET /api/products` with Prisma active-only filter, public access, and integer minor-unit response for F-02 Issue #9. Assisted Ba with authoring TDD test suites (`orders-pricing.unit.test.ts`, `orders-create.api.test.ts`), implementing pure domain pricing function (`calculateOrderPricing` with satang calculation and business constraints), and creating atomic order placement transaction with inventory decrement in `server/src/routes/orders.ts` for F-03 Issue #10. Assisted Cl with implementing customer ordering frontend views (`Catalog.tsx`, `Checkout.tsx` with double-click busy protection, `MyOrders.tsx` with loading/empty/error states, `OrderDetail.tsx` with persisted snapshot prices and formatted totals in THB), integrating cart state in `App.tsx`, securing `GET /api/orders` and `GET /api/orders/:id` with ownership isolation and 404 responses, and authoring Vitest component test suites (`Checkout.test.tsx`, `MyOrders.test.tsx`, `Catalog.test.tsx`) and API test suite (`orders-access.api.test.ts`) for Issue #11. Reviewed and verified by Ba and Cl.
 
 Known limitations / incomplete work / skipped tests:
 - None for Part A, Part B, Part C, Part D, Part E specifications, Part F.1 persistence foundation, or Part F.3 authentication suite.

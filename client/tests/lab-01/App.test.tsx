@@ -4,9 +4,9 @@ import App from "../../src/App.js";
 
 describe("App", () => {
   // WORKED EXAMPLE — provided for you.
-  it("renders the TokTickIT heading", () => {
+  it("renders the app heading", async () => {
     render(<App />);
-    expect(screen.getByText(/TokTickIT/i)).toBeInTheDocument();
+    expect(await screen.findByText(/UniMerch/i)).toBeInTheDocument();
   });
 
   // Issue 4 — write these yourself. Hint: mock the api module with
