@@ -1,0 +1,259 @@
+
+> unimerch-server@1.0.0 test
+> vitest run sprint-1/orders-create
+
+
+ RUN  v2.1.9 /home/lapulga/Documents/cours/Thailande/SWE/lab duo/AttalHaterAccount/server
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-07: Valid multi-item order placement & atomic stock decrement (AC-06) > creates an order in PLACED status, snapshots prices, and atomically decrements inventory
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-08: Authoritative server pricing (AC-07 / BR-03) > ignores client-sent total, price, unitPrice, or customerId and recalculates from DB
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects empty items array with HTTP 400
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects invalid quantities (0, negative, > 10) with HTTP 400
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects duplicate product lines in a single order payload with HTTP 400
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-11: Rejection on inactive product or stockout with atomic rollback (AC-09) > rejects order containing an inactive product and creates zero order records
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-11: Rejection on inactive product or stockout with atomic rollback (AC-09) > rejects order when requested quantity exceeds available stock and leaves stock unchanged
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-12: Price snapshot immutability across catalog price updates (AC-10) > preserves historical unitPriceAtOrder even after product catalog price changes in DB
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > Role & Authentication Restrictions (BR-08 / NFR-01) > returns HTTP 401 when unauthenticated
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > Role & Authentication Restrictions (BR-08 / NFR-01) > returns HTTP 403 when an OPERATOR attempts to place an order
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ❯ tests/sprint-1/orders-create.api.test.ts (10 tests | 10 failed) 1240ms
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-07: Valid multi-item order placement & atomic stock decrement (AC-06) > creates an order in PLACED status, snapshots prices, and atomically decrements inventory 100ms
+     → expected 404 to be 201 // Object.is equality
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-08: Authoritative server pricing (AC-07 / BR-03) > ignores client-sent total, price, unitPrice, or customerId and recalculates from DB 91ms
+     → expected 404 to be 201 // Object.is equality
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects empty items array with HTTP 400 92ms
+     → expected 404 to be 400 // Object.is equality
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects invalid quantities (0, negative, > 10) with HTTP 400 94ms
+     → expected 404 to be 400 // Object.is equality
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects duplicate product lines in a single order payload with HTTP 400 92ms
+     → expected 404 to be 400 // Object.is equality
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-11: Rejection on inactive product or stockout with atomic rollback (AC-09) > rejects order containing an inactive product and creates zero order records 91ms
+     → expected 404 to be 400 // Object.is equality
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-11: Rejection on inactive product or stockout with atomic rollback (AC-09) > rejects order when requested quantity exceeds available stock and leaves stock unchanged 94ms
+     → expected 404 to be 400 // Object.is equality
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-12: Price snapshot immutability across catalog price updates (AC-10) > preserves historical unitPriceAtOrder even after product catalog price changes in DB 94ms
+     → expected 404 to be 201 // Object.is equality
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > Role & Authentication Restrictions (BR-08 / NFR-01) > returns HTTP 401 when unauthenticated 98ms
+     → expected 404 to be 401 // Object.is equality
+   × Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > Role & Authentication Restrictions (BR-08 / NFR-01) > returns HTTP 403 when an OPERATOR attempts to place an order 89ms
+     → expected 404 to be 403 // Object.is equality
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-07: Valid multi-item order placement & atomic stock decrement (AC-06) > creates an order in PLACED status, snapshots prices, and atomically decrements inventory
+AssertionError: expected 404 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:80:26
+     78|         .send(orderPayload);
+     79| 
+     80|       expect(res.status).toBe(201);
+       |                          ^
+     81|       expect(res.body).toHaveProperty("order");
+     82|       const order = res.body.order;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-08: Authoritative server pricing (AC-07 / BR-03) > ignores client-sent total, price, unitPrice, or customerId and recalculates from DB
+AssertionError: expected 404 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:125:26
+    123|         .send(forgedPayload);
+    124| 
+    125|       expect(res.status).toBe(201);
+       |                          ^
+    126|       const order = res.body.order;
+    127| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects empty items array with HTTP 400
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:142:26
+    140|         .send({ items: [] });
+    141| 
+    142|       expect(res.status).toBe(400);
+       |                          ^
+    143|       expect(res.body).toHaveProperty("error");
+    144|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects invalid quantities (0, negative, > 10) with HTTP 400
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:151:30
+    149|         .set("Cookie", customerCookie)
+    150|         .send({ items: [{ productId: activeProduct1.id, quantity: 0 }]…
+    151|       expect(resZero.status).toBe(400);
+       |                              ^
+    152| 
+    153|       const resNeg = await request(app)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-10: Order line constraint validation (AC-08 / BR-06) > rejects duplicate product lines in a single order payload with HTTP 400
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:177:26
+    175|         });
+    176| 
+    177|       expect(res.status).toBe(400);
+       |                          ^
+    178|     });
+    179|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-11: Rejection on inactive product or stockout with atomic rollback (AC-09) > rejects order containing an inactive product and creates zero order records
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:192:26
+    190|         });
+    191| 
+    192|       expect(res.status).toBe(400);
+       |                          ^
+    193|       const ordersCountAfter = await prisma.order.count();
+    194|       expect(ordersCountAfter).toBe(ordersCountBefore);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-11: Rejection on inactive product or stockout with atomic rollback (AC-09) > rejects order when requested quantity exceeds available stock and leaves stock unchanged
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:207:26
+    205|         });
+    206| 
+    207|       expect(res.status).toBe(400);
+       |                          ^
+    208| 
+    209|       // Verify stock was not partially decremented
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > TEST-12: Price snapshot immutability across catalog price updates (AC-10) > preserves historical unitPriceAtOrder even after product catalog price changes in DB
+AssertionError: expected 404 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:227:26
+    225|         });
+    226| 
+    227|       expect(res.status).toBe(201);
+       |                          ^
+    228|       const orderId = res.body.order.id;
+    229|       const originalPrice = activeProduct1.priceMinor;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > Role & Authentication Restrictions (BR-08 / NFR-01) > returns HTTP 401 when unauthenticated
+AssertionError: expected 404 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:254:26
+    252|         .send({ items: [{ productId: activeProduct1.id, quantity: 1 }]…
+    253| 
+    254|       expect(res.status).toBe(401);
+       |                          ^
+    255|     });
+    256| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯
+
+ FAIL  tests/sprint-1/orders-create.api.test.ts > Order Placement API (F-03 / AC-06..AC-10 / TEST-07, TEST-08, TEST-10, TEST-11, TEST-12) > Role & Authentication Restrictions (BR-08 / NFR-01) > returns HTTP 403 when an OPERATOR attempts to place an order
+AssertionError: expected 404 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 404
+
+ ❯ tests/sprint-1/orders-create.api.test.ts:263:26
+    261|         .send({ items: [{ productId: activeProduct1.id, quantity: 1 }]…
+    262| 
+    263|       expect(res.status).toBe(403);
+       |                          ^
+    264|     });
+    265|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯
+
+ Test Files  1 failed (1)
+      Tests  10 failed (10)
+   Start at  15:31:00
+   Duration  2.39s (transform 147ms, setup 0ms, collect 633ms, tests 1.24s, environment 0ms, prepare 90ms)
+
