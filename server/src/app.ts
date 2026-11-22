@@ -6,6 +6,7 @@ import { authMiddleware, requireRole } from "./middleware/auth.js";
 import { authRouter } from "./routes/auth.js";
 import { productsRouter } from "./routes/products.js";
 import { ordersRouter } from "./routes/orders.js";
+import { operatorOrdersRouter } from "./routes/operatorOrders.js";
 
 // Initialize Prisma
 void getPrisma();
@@ -24,6 +25,7 @@ app.use(authMiddleware);
 app.use("/api/auth", authRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/orders", ordersRouter);
+app.use("/api/operator/orders", operatorOrdersRouter);
 
 app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({ status: "ok", service: "TokTickIT API" });

@@ -6,6 +6,7 @@ import { Catalog } from "./components/Catalog.js";
 import { Checkout } from "./components/Checkout.js";
 import { MyOrders } from "./components/MyOrders.js";
 import { OrderDetail } from "./components/OrderDetail.js";
+import { OperatorOrders } from "./components/OperatorOrders.js";
 import { Product, CartItem, Order } from "./api.js";
 
 const AppContent: React.FC = () => {
@@ -139,13 +140,7 @@ const AppContent: React.FC = () => {
         )}
 
         {user.role === "OPERATOR" && (
-          <div className="card shadow-sm p-4" data-testid="operator-orders-view">
-            <h3 className="h5 fw-bold mb-3">Incoming Orders Queue</h3>
-            <p className="text-muted">Orders awaiting operator review and counter acceptance.</p>
-            <div className="alert alert-warning py-2 small">
-              Operator fulfillment dashboard active.
-            </div>
-          </div>
+          <OperatorOrders />
         )}
       </main>
     </div>
