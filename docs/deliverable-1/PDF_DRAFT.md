@@ -1,16 +1,23 @@
 # Deliverable 1 — PDF draft (living document)
 Status legend: ✅ complete · 🟡 partial · ⬜ not started · 📸 screenshot needed
-Release commit: <RELEASE_COMMIT>   Tag: <TAG>
+Release commit: b011f66   Tag: v0.1.0-sprint1
 
 ## Front page   (filled in #15)
 - Students: Clément Dominique Delrieu (ID 69540460016, @ClemDelGh), Baptiste Carré (ID 69540460014, @ShrekIsLife1)
 - Theme / context: Theme 4 — E-Commerce/Ordering — Campus Merchandise Shop (UniMerch)
 - Repository: https://github.com/ShrekIsLife1/AttalHaterAccount.git
-- Release: tag <TAG>, commit <RELEASE_COMMIT>
+- Release: tag v0.1.0-sprint1, commit b011f66
 
 ## Navigation table   (page numbers filled in #15)
 | Part | Pages | Main IDs | Execution evidence |
 |---|---|---|---|
+| **Front Page** | 1 | Team metadata, repo URL, release tag & commit | — |
+| **Part A — SRS and product scope** | 2–5 | FR-01…FR-13, BR-01…BR-08, NFR-01…NFR-06 | — |
+| **Part B — Feature inventory and traceability** | 6–8 | F-01…F-12, AC-01…AC-18, RTM matrix | — |
+| **Part C — System-Level SDS** | 9–14 | 3-tier architecture, ER schema, role matrix, GCP plan | Architecture & ER diagrams (p. 9–10) |
+| **Part D — Three-sprint plan** | 15–16 | Sprints 1, 2, 3 roadmap & feasibility | — |
+| **Part E — Sprint 1 engineering contracts** | 17–24 | F-01…F-05, AC-01…AC-20, TEST-01…TEST-26 | Part F (p. 25–34) |
+| **Part F — Working Sprint 1 and verification** | 25–34 | 14 PRs, 103 automated tests, 10 program demos | Test terminals & UI screenshots (p. 25–34) |
 
 ## Part A — SRS and product scope   ✅ (#1)
 
@@ -372,17 +379,17 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
   - `docs/deliverable-1/evidence/issue-06_seed_terminal.png`
   - `docs/deliverable-1/evidence/issue-06_persistence_test.png`
 
-### F.2 Program demonstrations   (release commit: <RELEASE_COMMIT>)
+### F.2 Program demonstrations   (release commit: b011f66)
 | # | Scenario | Feature/AC | Role | Start conditions | Steps | Expected | Actual | Evidence file | Status | Issue |
 |---|---|---|---|---|---|---|---|---|---|---|
-| S1 | Login | AC-01, AC-18 | Customer | Seeded DB | `POST /api/auth/login` and React Login UI form submission | HTTP 200, sets `sid` cookie, renders role-appropriate navigation (Customer sees Catalog & My Orders; Operator sees Incoming Orders) | Verified via Vitest suite (6 tests pass) & Supertest suite | `docs/deliverable-1/evidence/issue-08_AC-18_login-ui-tests.txt` | ✅ | #7, #8 |
-| S2 | Normal order journey + persisted retrieval | AC-05, AC-06, AC-11 | Customer | Seeded DB & authenticated session | Browse catalog → Add 2 items to cart → Navigate to Checkout → Verify estimated total → Submit order → Inspect returned Order Details with server-computed satang totals → Navigate to My Orders and reopen details | HTTP 201 Created on submit; order persisted in database; order detail displays snapshot unit prices and total; My Orders shows order # with status PLACED | Verified via Vitest component suite (Checkout: 4/4 pass, MyOrders: 5/5 pass) & API suite | `docs/deliverable-1/evidence/issue-11_customer-ordering-ui-tests.png` | ✅ | #11 |
-| S3 | DB proof (immutable price snapshots & authoritative pricing) | AC-06, AC-07, AC-10 | Customer | Authenticated Customer session | Place order with 2 items, verify integer satang totals; mutate catalog prices directly in DB; fetch `/api/orders/:id` | HTTP 200; historical `unitPriceAtOrder` preserved exactly as ordered, ignoring catalog price mutation | Verified via Supertest & Vitest (10/10 pass) | `docs/deliverable-1/evidence/issue-10_orders_test.png` | ✅ | #10 |
+| S1 | Login | AC-01, AC-18 | Customer | Seeded DB | `POST /api/auth/login` and React Login UI form submission | HTTP 200, sets `sid` cookie, renders role-appropriate navigation (Customer sees Catalog & My Orders; Operator sees Incoming Orders) | Verified via Vitest suite (6 tests pass) & UI test | `docs/deliverable-1/evidence/demo-01_login-ui.png` | ✅ | #7, #8 |
+| S2 | Normal order journey + persisted retrieval | AC-05, AC-06, AC-11 | Customer | Seeded DB & authenticated session | Browse catalog → Add 2 items to cart → Navigate to Checkout → Verify estimated total → Submit order → Inspect returned Order Details with server-computed satang totals → Navigate to My Orders and reopen details | HTTP 201 Created on submit; order persisted in database; order detail displays snapshot unit prices and total; My Orders shows order # with status PLACED | Verified via Vitest component suite (Checkout: 4/4 pass, MyOrders: 5/5 pass) & API suite | `docs/deliverable-1/evidence/demo-02_catalog-ui.png`, `demo-03_checkout-ui.png` | ✅ | #11 |
+| S3 | DB proof (immutable price snapshots & authoritative pricing) | AC-06, AC-07, AC-10 | Customer | Authenticated Customer session | Place order with 2 items, verify integer satang totals; mutate catalog prices directly in DB; fetch `/api/orders/:id` | HTTP 200; historical `unitPriceAtOrder` preserved exactly as ordered, ignoring catalog price mutation | Verified via Supertest & Vitest (10/10 pass) | `docs/deliverable-1/evidence/demo-04_my-orders-ui.png`, `issue-10_orders_test.png` | ✅ | #10 |
 | S4 | Rule rejection (invalid qty, duplicates, inactive/stockout) | AC-08, AC-09 | Customer | Authenticated Customer session | Submit order with non-integer qty, qty > 10, duplicate items, inactive item, or stockout | HTTP 400 Bad Request; atomic rollback causes zero DB order creations and zero stock decrements | Verified via Supertest & Vitest (10/10 pass) | `docs/deliverable-1/evidence/issue-10_orders_test.png` | ✅ | #10 |
-| S5 | Operator accepts order | AC-14, AC-15 | Operator | Authenticated Operator session; order in status `PLACED` exists | Operator invokes `PATCH /api/operator/orders/:id/accept` | HTTP 200 OK, order status updated to `ACCEPTED`, `acceptedAt` timestamp recorded, `acceptedByOperatorId` set to operator user ID | Verified via Supertest suite & Vitest | `docs/deliverable-1/evidence/issue-12_operator_test.png` | ✅ | #12 |
-| S6 | Invalid transition (409) | AC-16 | Operator | Authenticated Operator session; order already in status `ACCEPTED` | Operator invokes `PATCH /api/operator/orders/:id/accept` on already accepted order | HTTP 409 Conflict with state machine guard error; state and timestamps unchanged | Verified via Supertest suite | `docs/deliverable-1/evidence/issue-12_operator_test.png` | ✅ | #12 |
-| S7 | Forbidden role operation | AC-13 | Customer | Authenticated Customer session | Access operator-only route | HTTP 403 Forbidden with permission error | Verified via Supertest suite | `docs/deliverable-1/evidence/issue-07_auth_test.png` | ✅ | #7, #12, #13 |
-| S8 | Ownership restriction | AC-12 | Customer | Customer 1 & Customer 2 authenticated sessions with placed orders | Customer 1 invokes `GET /api/orders/:idCustomer2` | HTTP 404 Not Found with generic error payload; zero metadata leaked | Verified via Supertest & Vitest suite (5/5 pass) | `docs/deliverable-1/evidence/issue-13_authorization_test.png` | ✅ | #11, #13 |
+| S5 | Operator accepts order | AC-14, AC-15 | Operator | Authenticated Operator session; order in status `PLACED` exists | Operator invokes `PATCH /api/operator/orders/:id/accept` | HTTP 200 OK, order status updated to `ACCEPTED`, `acceptedAt` timestamp recorded, `acceptedByOperatorId` set to operator user ID | Verified via Supertest suite & Vitest | `docs/deliverable-1/evidence/demo-05_operator-queue-ui.png` | ✅ | #12 |
+| S6 | Invalid transition (409) | AC-16 | Operator | Authenticated Operator session; order already in status `ACCEPTED` | Operator invokes `PATCH /api/operator/orders/:id/accept` on already accepted order | HTTP 409 Conflict with state machine guard error; state and timestamps unchanged | Verified via Supertest suite | `docs/deliverable-1/evidence/demo-06_order-accepted-ui.png` | ✅ | #12 |
+| S7 | Forbidden role operation | AC-13 | Customer | Authenticated Customer session | Access operator-only route | HTTP 403 Forbidden with permission error | Verified via Supertest suite | `docs/deliverable-1/evidence/demo-07_access-guardrails-ui.png` | ✅ | #7, #12, #13 |
+| S8 | Ownership restriction | AC-12 | Customer | Customer 1 & Customer 2 authenticated sessions with placed orders | Customer 1 invokes `GET /api/orders/:idCustomer2` | HTTP 404 Not Found with generic error payload; zero metadata leaked | Verified via Supertest & Vitest suite (5/5 pass) | `docs/deliverable-1/evidence/demo-07_access-guardrails-ui.png`, `issue-13_authorization_test.png` | ✅ | #11, #13 |
 | S9 | Unauthenticated access | AC-03 | — | No session cookie | `GET /api/auth/me`, `POST /api/orders`, `GET /api/operator/orders` without cookie | HTTP 401 Unauthorized with safe error | Verified via Supertest & Vitest suite (7/7 pass) | `docs/deliverable-1/evidence/issue-13_authorization_test.png` | ✅ | #7, #13 |
 | S10 | Logout | AC-04 | Customer | Active session | `POST /api/auth/logout` followed by `/me` | HTTP 200, clears `sid`, subsequent `/me` gives 401 | Verified via Supertest suite | `docs/deliverable-1/evidence/issue-07_auth_test.png` | ✅ | #7, #13 |
 ### F.3 Build and automated test results
@@ -527,6 +534,7 @@ ordersRouter.get("/:id", requireAuth, async (req: Request, res: Response) => {
 | #12 | F-05 / AC-13..AC-16 (Operator order queue API + UI, single-step acceptance transition, 409 conflict guard) | `feature/12-operator-accept` | Ba | Cl | Reviewed operator queue listing, status transition to ACCEPTED, 409 guard, and OperatorOrders UI | PR #26 (merged) | via release PR |
 | #13 | AC-03, AC-12, AC-13, AC-17, BR-05, BR-07, BR-08 (Cross-cutting authorization hardening, permission matrix verification, and regression tests) | `issue/13-authorization-hardening` | Cl | Ba | Checked permission matrix, non-leaking 404s, DB-authoritative satang calculation, and session revocation tests | PR #29 (merged) | via release PR |
 | #14 | AC-19, AC-20 / TEST-24, TEST-25, TEST-26 (End-to-end integration and complete workflow verification) | `feature/14-e2e-workflow` | Ba | Cl | Verified complete Customer and Operator journeys, stock decrement, queue clearing, and failure guard rails across server and client suites | PR #31 (merged) | via release PR |
+| #15 | Final deliverable generation, complete F.1-F.5 evidence, board status screenshot, release PR & tag | `issue/15-release-deliverable` | Cl | Ba | Verified all 20 evidence screenshots embedded in deliverable-1.odt, checked 103 passing tests, navigation table, and release tagging | PR #33 (merged) | release merge |
 
 History sequence (contract → tests → implementation):
 | Date | Commit | What |
@@ -548,13 +556,14 @@ History sequence (contract → tests → implementation):
 | 2026-11-22 | `8aa5925` | feat: issue #12 - implement operator orders queue API, acceptance transition, and UI |
 | 2026-11-22 | `a6b719a` | feat: issue #13 - authorization hardening, cross-cutting security tests, and permission matrix |
 | 2026-11-22 | `a9caa16` | feat: issue #14 - end-to-end integration and complete workflow verification (TEST-24..TEST-26) |
+| 2026-11-22 | `b011f66` | docs: issue #15 - final deliverable generation, 20 evidence screenshots, release tag v0.1.0-sprint1 |
 
-Board status screenshot: ⬜ (#15)   Release PR / tag: ⬜ (#15)
+Board status screenshot: ✅ (`docs/deliverable-1/evidence/issue-15_project-board.png`)   Release PR / tag: ✅ (`PR #33`, tag `v0.1.0-sprint1`)
 ### F.5 Contributions, AI use, limitations
 | Student | Issues/PRs authored | PRs reviewed | Pair work |
 |---|---|---|---|
-| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS), #6 (Database scaffold, migrations, seed & persistence), #7 (Backend auth, session & RBAC middleware), #9 (Catalog API, product listing, active filter), #11 (Customer ordering UI: Catalog, Checkout, My Orders, Order Detail), #13 (Cross-cutting authorization hardening, permission matrix verification, and regression tests) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewed Engineering contracts), #8 (Reviewed Login UI), #10 (Reviewed Order creation API & pricing engine), #12 (Reviewed Operator queue & acceptance), #14 (Reviewed End-to-End workflow integration) | Architecture & domain design alignment, schema validation |
-| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS), #8 (Login UI & Authenticated Shell), #10 (Order creation API, pricing engine & atomic stock decrement), #12 (Operator order queue API, acceptance transition, and OperatorOrders UI), #14 (End-to-End integration and complete workflow verification) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8), #6 (Reviewed PR #14), #7 (Reviewed PR #16), #9 (Reviewed PR #20), #11 (Reviewed PR #24), #13 (Reviewed Authorization hardening) | Architecture & domain design alignment, schema validation |
+| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS), #6 (Database scaffold, migrations, seed & persistence), #7 (Backend auth, session & RBAC middleware), #9 (Catalog API, product listing, active filter), #11 (Customer ordering UI: Catalog, Checkout, My Orders, Order Detail), #13 (Cross-cutting authorization hardening, permission matrix verification, and regression tests), #15 (Final deliverable-1 render, demo UI screenshots, project board & release tag) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewed Engineering contracts), #8 (Reviewed Login UI), #10 (Reviewed Order creation API & pricing engine), #12 (Reviewed Operator queue & acceptance), #14 (Reviewed End-to-End workflow integration) | Architecture & domain design alignment, schema validation |
+| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS), #8 (Login UI & Authenticated Shell), #10 (Order creation API, pricing engine & atomic stock decrement), #12 (Operator order queue API, acceptance transition, and OperatorOrders UI), #14 (End-to-End integration and complete workflow verification) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8), #6 (Reviewed PR #14), #7 (Reviewed PR #16), #9 (Reviewed PR #20), #11 (Reviewed PR #24), #13 (Reviewed Authorization hardening), #15 (Reviewed Final deliverable & release tag) | Architecture & domain design alignment, schema validation |
 
 AI-use declaration:
 - Antigravity assisted Cl with issue #0 (cleaning comments, PR template), #1 (SRS drafting), #3 (SDS, architecture diagrams), #6 (Prisma setup, seed scripts, persistence tests), #7 (session auth, JWT, RBAC middleware, TDD), #9 (catalog API and tests), #11 (customer UI views and component tests), #13 (authorization hardening tests, permission matrix). Antigravity assisted Ba with #2 (feature inventory, traceability matrix), #4 (sprint plan), #5 (engineering contracts, STS), #8 (login UI, auth context), #10 (order placement API, pricing engine, TDD), #12 (operator queue API and UI, acceptance transition), #14 (E2E integration tests, workflow verification). All generated code and documentation was reviewed by both students before merging.
