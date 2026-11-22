@@ -17,6 +17,8 @@ images = {
     "pers": "docs/deliverable-1/evidence/issue-06_persistence_test.png",
     "auth": "docs/deliverable-1/evidence/issue-07_auth_test.png",
     "catalog": "docs/deliverable-1/evidence/issue-09_catalog_test.png",
+    "orders": "docs/deliverable-1/evidence/issue-10_orders_test.png",
+    "ui": "docs/deliverable-1/evidence/issue-11_customer-ordering-ui-tests.png",
 }
 
 img_data = {}
@@ -269,8 +271,36 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.5 Program Demonstrations (Scenarios S1 to S10)</text:p>
+   <text:p text:style-name="SubsectionTitle">F.5 Orders &amp; Domain Pricing Engine Test Suite (F-03 / AC-06..10 / TEST-07..12)</text:p>
    <table:table table:name="BoxF5">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">
+       <draw:frame draw:name="OrdersTest" text:anchor-type="as-char" svg:width="16.5cm" svg:height="8.8cm">
+        <draw:image xlink:href="Pictures/issue-10_orders_test.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+       </draw:frame>
+      </text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+
+   <text:p text:style-name="SubsectionTitle">F.6 Customer Ordering UI Suite — Checkout, My Orders, Catalog (Issue #11 / AC-06..11 / TEST-06, 14)</text:p>
+   <table:table table:name="BoxF6">
+    <table:table-column/>
+    <table:table-row>
+     <table:table-cell table:style-name="BoxCell">
+      <text:p text:style-name="BoxText">
+       <draw:frame draw:name="CustomerOrderUITest" text:anchor-type="as-char" svg:width="16.5cm" svg:height="8.0cm">
+        <draw:image xlink:href="Pictures/issue-11_customer-ordering-ui-tests.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+       </draw:frame>
+      </text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+
+   <text:p text:style-name="SubsectionTitle">F.7 Program Demonstrations (Scenarios S1 to S10)</text:p>
+   <table:table table:name="BoxF7">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">
@@ -279,8 +309,8 @@ content_xml = """<?xml version="1.0" encoding="UTF-8"?>
     </table:table-row>
    </table:table>
 
-   <text:p text:style-name="SubsectionTitle">F.6 Engineering Workflow &amp; Contribution History</text:p>
-   <table:table table:name="BoxF6">
+   <text:p text:style-name="SubsectionTitle">F.8 Engineering Workflow &amp; Contribution History</text:p>
+   <table:table table:name="BoxF8">
     <table:table-column/>
     <table:table-row>
      <table:table-cell table:style-name="BoxCell">

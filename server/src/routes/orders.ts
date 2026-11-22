@@ -104,8 +104,39 @@ ordersRouter.post(
 );
 
 /**
+ * GET /api/orders
+ * Retrieve list of orders for the authenticated customer, sorted newest first.
+ * F-04 / AC-11 / TEST-13
+ */
+ordersRouter.get(
+  "/",
+  requireAuth,
+  requireRole("CUSTOMER"),
+  async (req: Request, res: Response) => {
+    try {
+      const orders = await prisma.order.findMany({
+        where: { customerId: req.user!.id },
+        orderBy: { createdAt: "desc" },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      return res.status(200).json({ orders });
+    } catch (err: any) {
+      return res.status(500).json({ error: "Failed to retrieve orders: " + (err?.message || "Internal error") });
+    }
+  }
+);
+
+/**
  * GET /api/orders/:id
  * Retrieve order details by ID with line items.
+ * F-04 / AC-12 / TEST-15: Returns 404 for non-existent and cross-customer orders.
  */
 ordersRouter.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
@@ -129,9 +160,11 @@ ordersRouter.get("/:id", requireAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // RBAC: CUSTOMER can only view their own order; OPERATOR can view any order
+    // RBAC & Ownership Isolation (AC-12 / NFR-01):
+    // CUSTOMER can only view their own order; if different customer, return 404 to avoid leaking existence.
+    // OPERATOR can view any order.
     if (req.user!.role === "CUSTOMER" && order.customerId !== req.user!.id) {
-      return res.status(403).json({ error: "Forbidden: You cannot view another customer's order" });
+      return res.status(404).json({ error: "Order not found" });
     }
 
     return res.status(200).json({ order });

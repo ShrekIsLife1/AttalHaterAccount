@@ -1,0 +1,21 @@
+
+> unimerch-server@1.0.0 test
+> vitest run sprint-1/orders-access --reporter=verbose
+
+
+ RUN  v2.1.9 /home/meownux/Documents/SWE/Vinted/AttalHaterAccount/server
+
+stdout | tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-13: GET /api/orders — Customer lists only own orders (AC-11) > returns HTTP 200 with only Customer 1's orders, sorted newest first
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-13: GET /api/orders — Customer lists only own orders (AC-11) > returns HTTP 401 when calling GET /api/orders unauthenticated
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-15: GET /api/orders/:id — Ownership isolation (AC-12 / NFR-01) > allows Customer 1 to view their own order detail
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-15: GET /api/orders/:id — Ownership isolation (AC-12 / NFR-01) > returns HTTP 404 Not Found when Customer 1 queries Customer 2's order (no data leakage)
+ ✓ tests/sprint-1/orders-access.api.test.ts > Customer Order Access & Ownership Isolation (F-04 / AC-11, AC-12 / TEST-13, TEST-15) > TEST-15: GET /api/orders/:id — Ownership isolation (AC-12 / NFR-01) > returns HTTP 404 for non-existent order ID
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  16:24:12
+   Duration  513ms (transform 49ms, setup 0ms, collect 137ms, tests 248ms, environment 0ms, prepare 29ms)
+

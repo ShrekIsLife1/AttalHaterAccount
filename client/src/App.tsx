@@ -2,10 +2,17 @@ import React, { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext.js";
 import { Login } from "./components/Login.js";
 import { Navbar } from "./components/Navbar.js";
+import { Catalog } from "./components/Catalog.js";
+import { Checkout } from "./components/Checkout.js";
+import { MyOrders } from "./components/MyOrders.js";
+import { OrderDetail } from "./components/OrderDetail.js";
+import { Product, CartItem, Order } from "./api.js";
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("catalog");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
   // Keep active tab in sync with user role
   useEffect(() => {
@@ -15,8 +22,50 @@ const AppContent: React.FC = () => {
       } else if (user.role === "OPERATOR") {
         setActiveTab("incoming-orders");
       }
+    } else {
+      setCart([]);
+      setSelectedOrderId(null);
     }
   }, [user]);
+
+  // Cart operations
+  const handleAddToCart = (product: Product, quantity: number) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.product.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.product.id === product.id
+            ? { ...item, quantity: Math.min(10, item.quantity + quantity) }
+            : item
+        );
+      }
+      return [...prev, { product, quantity }];
+    });
+  };
+
+  const handleUpdateQuantity = (productId: number, quantity: number) => {
+    if (quantity <= 0) {
+      handleRemoveItem(productId);
+      return;
+    }
+    setCart((prev) =>
+      prev.map((item) =>
+        item.product.id === productId
+          ? { ...item, quantity: Math.min(10, quantity) }
+          : item
+      )
+    );
+  };
+
+  const handleRemoveItem = (productId: number) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  };
+
+  const handleClearCart = () => {
+    setCart([]);
+  };
+
+  const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   if (loading) {
     return (
@@ -37,29 +86,54 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-vh-100 bg-light">
-      <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Navbar
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setSelectedOrderId(null);
+          setActiveTab(tab);
+        }}
+      />
 
       <main className="container py-4">
         {user.role === "CUSTOMER" && (
           <div>
             {activeTab === "catalog" && (
-              <div className="card shadow-sm p-4" data-testid="customer-catalog-view">
-                <h3 className="h5 fw-bold mb-3">Product Catalog</h3>
-                <p className="text-muted">Browse official campus merchandise and add items to your order.</p>
-                <div className="alert alert-info py-2 small">
-                  Catalog product listing is active and ready for Sprint 1 orders.
-                </div>
-              </div>
+              <Catalog
+                onAddToCart={handleAddToCart}
+                cartItemCount={totalCartCount}
+                onGoToCheckout={() => setActiveTab("checkout")}
+              />
             )}
 
-            {activeTab === "my-orders" && (
-              <div className="card shadow-sm p-4" data-testid="customer-orders-view">
-                <h3 className="h5 fw-bold mb-3">My Orders</h3>
-                <p className="text-muted">Track your placed orders and counter pickup status.</p>
-                <div className="alert alert-secondary py-2 small">
-                  No orders placed yet.
-                </div>
-              </div>
+            {activeTab === "checkout" && (
+              <Checkout
+                cart={cart}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemoveItem={handleRemoveItem}
+                onClearCart={handleClearCart}
+                onBackToCatalog={() => setActiveTab("catalog")}
+                onOrderCreated={(order: Order) => {
+                  setSelectedOrderId(order.id);
+                }}
+              />
+            )}
+
+            {activeTab === "my-orders" && !selectedOrderId && (
+              <MyOrders
+                onSelectOrder={(orderId) => setSelectedOrderId(orderId)}
+                onGoToCatalog={() => {
+                  setSelectedOrderId(null);
+                  setActiveTab("catalog");
+                }}
+              />
+            )}
+
+            {activeTab === "my-orders" && selectedOrderId && (
+              <OrderDetail
+                orderId={selectedOrderId}
+                onBack={() => setSelectedOrderId(null)}
+                backLabel="Back to My Orders"
+              />
             )}
           </div>
         )}

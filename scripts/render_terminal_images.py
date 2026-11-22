@@ -185,3 +185,34 @@ orders_lines = [
 ]
 render_terminal("Terminal — Vitest Orders & Pricing Test Suite (F-03 / AC-06..AC-10 / TEST-07..TEST-12)", orders_lines, "docs/deliverable-1/evidence/issue-10_orders_test.png")
 
+# 6. Customer Ordering UI & Access Test Suite
+ui_lines = [
+    ("$ cd client && npm test -- sprint-1/Checkout sprint-1/MyOrders sprint-1/Catalog", "#38d430"),
+    ("", "#cccccc"),
+    ("> toktickit-client@1.0.0 test", "#888888"),
+    ("> vitest run sprint-1/Checkout sprint-1/MyOrders sprint-1/Catalog", "#888888"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/Checkout.test.tsx (4 tests) 72ms", "#27c93f"),
+    ("   ✓ renders cart items, line subtotals, and estimated total clearly labelled", "#27c93f"),
+    ("   ✓ submits order, shows busy state, and displays persisted order detail afterwards", "#27c93f"),
+    ("   ✓ displays server rejection error clearly when product is out of stock", "#27c93f"),
+    ("   ✓ renders friendly empty cart state when cart has no items", "#27c93f"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/MyOrders.test.tsx (5 tests) 54ms", "#27c93f"),
+    ("   ✓ displays loading indicator initially while orders are being fetched", "#27c93f"),
+    ("   ✓ renders list of orders with IDs, status badges, and formatted totals", "#27c93f"),
+    ("   ✓ calls onSelectOrder with the correct orderId when 'View Details' is clicked", "#27c93f"),
+    ("   ✓ renders friendly empty state when customer has zero orders", "#27c93f"),
+    ("   ✓ renders error state when fetching orders fails", "#27c93f"),
+    ("", "#cccccc"),
+    (" ✓ tests/sprint-1/Catalog.test.tsx (2 tests) 28ms", "#27c93f"),
+    ("   ✓ renders active products with formatted THB prices and availability badges", "#27c93f"),
+    ("   ✓ adds selected quantity to cart when 'Add to Cart' is clicked", "#27c93f"),
+    ("", "#cccccc"),
+    (" Test Files  3 passed (3)", "#27c93f"),
+    ("      Tests  11 passed (11)", "#27c93f"),
+    ("   Duration  940ms (transform 110ms, setup 180ms, collect 380ms, tests 154ms)", "#aaaaaa")
+]
+render_terminal("Terminal — Vitest Customer Ordering UI Suite (F-02, F-03, F-04 / TEST-06, TEST-14)", ui_lines, "docs/deliverable-1/evidence/issue-11_customer-ordering-ui-tests.png")
+
+

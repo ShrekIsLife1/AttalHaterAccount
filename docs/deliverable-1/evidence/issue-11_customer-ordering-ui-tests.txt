@@ -1,0 +1,24 @@
+
+> toktickit-client@1.0.0 test
+> vitest run sprint-1/Checkout sprint-1/MyOrders sprint-1/Catalog --reporter=verbose
+
+
+ RUN  v2.1.9 /home/meownux/Documents/SWE/Vinted/AttalHaterAccount/client
+
+ ✓ tests/sprint-1/MyOrders.test.tsx > Issue #11: My Orders View (F-04 / AC-11 / TEST-14) > displays loading indicator initially while orders are being fetched
+ ✓ tests/sprint-1/Catalog.test.tsx > Product Catalog UI (F-02 / AC-05 / TEST-06) > renders active products with formatted THB prices and availability badges
+ ✓ tests/sprint-1/Catalog.test.tsx > Product Catalog UI (F-02 / AC-05 / TEST-06) > adds selected quantity to cart when 'Add to Cart' is clicked
+ ✓ tests/sprint-1/MyOrders.test.tsx > Issue #11: My Orders View (F-04 / AC-11 / TEST-14) > renders list of orders with IDs, status badges, and formatted totals
+ ✓ tests/sprint-1/MyOrders.test.tsx > Issue #11: My Orders View (F-04 / AC-11 / TEST-14) > calls onSelectOrder with the correct orderId when 'View Details' is clicked
+ ✓ tests/sprint-1/MyOrders.test.tsx > Issue #11: My Orders View (F-04 / AC-11 / TEST-14) > renders friendly empty state when customer has zero orders
+ ✓ tests/sprint-1/MyOrders.test.tsx > Issue #11: My Orders View (F-04 / AC-11 / TEST-14) > renders error state when fetching orders fails
+ ✓ tests/sprint-1/Checkout.test.tsx > Issue #11: Checkout & Order Submission UI (F-03 / AC-06..AC-10) > renders cart items, line subtotals, and estimated total clearly labelled
+ ✓ tests/sprint-1/Checkout.test.tsx > Issue #11: Checkout & Order Submission UI (F-03 / AC-06..AC-10) > submits order, shows busy state, and displays persisted order detail afterwards
+ ✓ tests/sprint-1/Checkout.test.tsx > Issue #11: Checkout & Order Submission UI (F-03 / AC-06..AC-10) > displays server rejection error clearly when product is out of stock
+ ✓ tests/sprint-1/Checkout.test.tsx > Issue #11: Checkout & Order Submission UI (F-03 / AC-06..AC-10) > renders friendly empty cart state when cart has no items
+
+ Test Files  3 passed (3)
+      Tests  11 passed (11)
+   Start at  16:24:11
+   Duration  765ms (transform 130ms, setup 118ms, collect 315ms, tests 232ms, environment 776ms, prepare 250ms)
+
