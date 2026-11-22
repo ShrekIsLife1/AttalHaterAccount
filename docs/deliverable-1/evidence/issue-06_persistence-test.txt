@@ -1,0 +1,20 @@
+
+> unimerch-server@1.0.0 test
+> vitest run sprint-1/persistence
+
+
+ RUN  v2.1.9 /home/meownux/Documents/SWE/Vinted/AttalHaterAccount/server
+
+stdout | tests/sprint-1/persistence.api.test.ts > Persistence & Seed Foundation (AC-17 / TEST-21)
+Seeding completed successfully: 5 users and 8 products upserted.
+
+stdout | tests/sprint-1/persistence.api.test.ts > Persistence & Seed Foundation (AC-17 / TEST-21) > is idempotent: running seed a second time produces no duplicates or constraint errors
+Seeding completed successfully: 5 users and 8 products upserted.
+
+ ✓ tests/sprint-1/persistence.api.test.ts (4 tests) 194ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  13:53:20
+   Duration  444ms (transform 40ms, setup 0ms, collect 53ms, tests 194ms, environment 0ms, prepare 54ms)
+

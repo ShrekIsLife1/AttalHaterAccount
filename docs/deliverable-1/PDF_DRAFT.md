@@ -361,7 +361,17 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 6. **Peer Review:** Branch reviewed and approved on GitHub with substantive specific comments before merging to `sprint1-staging`.
 
 ## Part F — Working Sprint 1 and verification
-### F.1 Setup summary   ⬜ (#6, #15)
+### F.1 Setup summary   ✅ (#6, #15)
+- **Node.js Environment:** Node.js v20.20.2, npm v10.8.2.
+- **Database Engine:** PostgreSQL 16 on `localhost:5432` (`DATABASE_URL="postgresql://postgres:postgres@localhost:5432/unimerch?schema=public"`).
+- **ORM & Migrations:** Prisma ORM 5.x with declarative schema (`server/prisma/schema.prisma`). Initial migration generated and applied via `npx prisma migrate resolve --applied 20261122000000_init` / `prisma migrate deploy`.
+- **Database Seeding:** Executed via `npm run seed` (`tsx prisma/seed.ts`), idempotently upserting 5 users (3 Customers, 2 Operators with bcrypt hashes) and 8 products (including inactive and out-of-stock items).
+- **Evidence Files:**
+  - `docs/deliverable-1/evidence/issue-06_seed-output.txt`
+  - `docs/deliverable-1/evidence/issue-06_persistence-test.txt`
+  - `docs/deliverable-1/evidence/issue-06_seed_terminal.png`
+  - `docs/deliverable-1/evidence/issue-06_persistence_test.png`
+
 ### F.2 Program demonstrations   (release commit: <RELEASE_COMMIT>)
 | # | Scenario | Feature/AC | Role | Start conditions | Steps | Expected | Actual | Evidence file | Status | Issue |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -376,10 +386,11 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 | S9 | Unauthenticated access | AC-03 | — | | | | | | ⬜ | #7, #13 |
 | S10 | Logout | AC-04 | Customer | | | | | | ⬜ | #7 |
 ### F.3 Build and automated test results
-- Commands and tested commit:
-- Passed / failed / skipped counts:
+- Commands and tested commit: `npm test -- sprint-1/persistence` (Vitest v2.1.9)
+- Passed / failed / skipped counts: 4 passed, 0 failed, 4 total (194ms test execution)
 | AC | Planned TEST | Actual test file / name | Level | Result | Issue |
 |---|---|---|---|---|---|
+| **AC-17** | TEST-21 | `server/tests/sprint-1/persistence.api.test.ts` (idempotent seed, relational persistence, schema validation) | Persistence | ✅ PASS (4/4) | #6 |
 - Excerpt 1 (domain rule): ⬜ (#10)
 - Excerpt 2 (ownership restriction): ⬜ (#13)
 - TDD evidence (failing → passing, commit hashes): ⬜ (#7, #10, #12)
@@ -391,7 +402,8 @@ The scope chosen for Sprint 1 is **compact, cohesive, and guaranteed to be feasi
 | #2 | Part B — Feature inventory and traceability (F-01…F-12, AC-01…AC-18, RTM) | `issue/02-traceability` | Ba | Cl | Reviewed feature inventory, traceability matrix, and coverage checks | PR #6 (merged) | via release PR |
 | #3 | Part C — System-Level SDS (Architecture, Data Model, API/UI, Roles, Security, GCP) | `issue/03-system-sds` | Cl | Ba | Reviewed 3-tier architecture, ER schema, role matrix, and GCP deployment plan | PR #8 (merged) | via release PR |
 | #4 | Part D — Three-sprint plan (roadmap table, feature allocation, feasibility) | `issue/04-sprint-plan` | Ba | Cl | Reviewed 3-sprint plan, confirmed feature coverage and Sprint 1 feasibility | PR #9 (merged) | via release PR |
-| #5 | Part E — Sprint 1 engineering contracts (F-01…F-05, STS TEST-01…26, DoD) | `issue/05-sprint1-contracts` | Ba | Cl | (Pending PR review) | PR (pending) | via release PR |
+| #5 | Part E — Sprint 1 engineering contracts (F-01…F-05, STS TEST-01…26, DoD) | `issue/05-sprint1-contracts` | Ba | Cl | Reviewed feature contracts, STS matrix (TEST-01..26), and DoD | PR #12 (merged) | via release PR |
+| #6 | AC-17 (Scaffold, PostgreSQL schema, migrations, idempotent seed, persistence test) | `issue/06-scaffold-db-seed` | Cl | Ba | Reviewed Prisma schema, migration 20261122000000_init, seed idempotency, and persistence test suite | PR (pending) | via release PR |
 
 History sequence (contract → tests → implementation):
 | Date | Commit | What |
@@ -401,17 +413,18 @@ History sequence (contract → tests → implementation):
 | 2026-11-20 | `c91d830` | docs: issue #2 - complete feature inventory and traceability matrix (Part B) |
 | 2026-11-21 | `73d4a2b` | docs: issue #3 - complete System-Level SDS specification (Part C) |
 | 2026-11-22 | `f2ead04` | docs: issue #4 - complete three-sprint plan and feasibility justification (Part D) |
-| 2026-11-22 | `pending` | docs: issue #5 - complete Sprint 1 engineering contracts, STS, and DoD (Part E) |
+| 2026-11-22 | `eac2826` | docs: issue #5 - complete Sprint 1 engineering contracts, STS, and DoD (Part E) |
+| 2026-11-22 | `pending` | feat: issue #6 - scaffold, database schema, Prisma migrations, idempotent seed, and persistence tests |
 
 Board status screenshot: ⬜ (#15)   Release PR / tag: ⬜ (#15)
 ### F.5 Contributions, AI use, limitations
 | Student | Issues/PRs authored | PRs reviewed | Pair work |
 |---|---|---|---|
-| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewing Engineering contracts) | Architecture & domain design alignment, schema validation |
-| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8) | Architecture & domain design alignment, schema validation |
+| Cl | #0 (Scaffold & Draft setup), #1 (SRS specification), #3 (System-Level SDS), #6 (Database scaffold, migrations, seed & persistence) | #2 (Traceability matrix & Feature inventory), #4 (Reviewed Three-sprint plan), #5 (Reviewed Engineering contracts) | Architecture & domain design alignment, schema validation |
+| Ba | #2 (Feature inventory & Traceability matrix), #4 (Three-sprint plan), #5 (Engineering contracts & STS) | #0 (Reviewed PR #2), #1 (Reviewed PR #4), #3 (Reviewed PR #8), #6 (Reviewing Scaffold & DB) | Architecture & domain design alignment, schema validation |
 
 AI-use declaration:
-- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Assisted Ba with establishing the three-sprint roadmap, drafting `docs/sprints/plan.md`, formatting the dependency graph, and documenting Part D in `PDF_DRAFT.md` (`#4`). Assisted Ba with writing feature engineering contracts (`F-01` to `F-05`), compiling the complete Software Test Specification (`TEST-01` to `TEST-26`), establishing the Product Definition of Done, and documenting Part E in `PDF_DRAFT.md` (`#5`). Reviewed and verified by Ba.
+- Claude / Antigravity: Assisted Cl with cleaning outdated comments, scaffolding PR template/draft skeleton (`#0`), and drafting SRS Part A (`#1`). Assisted Ba with decomposing features (F-01..12), formalizing acceptance criteria (AC-01..18), synthesizing bidirectional traceability matrices (`docs/features.md`, `docs/traceability.md`), and authoring Part B in `PDF_DRAFT.md` (`#2`). Assisted Cl with authoring `docs/system-sds.md`, designing the 3-tier architecture, data schemas, role/permission matrix, and generating visual diagrams (`#3`). Assisted Ba with establishing the three-sprint roadmap, drafting `docs/sprints/plan.md`, formatting the dependency graph, and documenting Part D in `PDF_DRAFT.md` (`#4`). Assisted Ba with writing feature engineering contracts (`F-01` to `F-05`), compiling the complete Software Test Specification (`TEST-01` to `TEST-26`), establishing the Product Definition of Done, and documenting Part E in `PDF_DRAFT.md` (`#5`). Assisted Cl with configuring Prisma ORM, authoring migrations and idempotent seed scripts, and implementing persistence test suite for AC-17 (`#6`). Reviewed and verified by Ba and Cl.
 
 Known limitations / incomplete work / skipped tests:
-- None for Part A, Part B, Part C, Part D, and Part E specifications.
+- None for Part A, Part B, Part C, Part D, Part E specifications, or Part F.1 persistence foundation.
