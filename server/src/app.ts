@@ -29,10 +29,12 @@ app.use("/api/products", productsRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/operator/orders", operatorOrdersRouter);
 
+// Health check (lightweight, no DB dependency) - TEST-L5-05
 app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({ status: "ok", service: "TokTickIT API" });
 });
 
+// Readiness probe (verifies database connectivity) - TEST-L5-06
 app.get("/api/ready", async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
@@ -43,6 +45,7 @@ app.get("/api/ready", async (_req: Request, res: Response) => {
   }
 });
 
+// Version endpoint (returns GIT_SHA from environment, no secret leakage) - TEST-L5-07
 app.get("/api/version", (_req: Request, res: Response) => {
   res.status(200).json({ commit: process.env.GIT_SHA || "unknown" });
 });
