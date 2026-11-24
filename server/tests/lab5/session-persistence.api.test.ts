@@ -1,9 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
+import crypto from "crypto";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { runSeed } from "../../prisma/seed.js";
 
 describe("TEST-L5-08: Session DB Persistence across app restarts (API)", () => {
+  beforeAll(async () => {
+    process.env.SEED_PASSWORD = "password123";
+    await runSeed();
+  });
+
   it("session created via login is persisted in Session table and remains valid across new requests", async () => {
     const prisma = getPrisma();
 
@@ -21,9 +28,11 @@ describe("TEST-L5-08: Session DB Persistence across app restarts (API)", () => {
     const token = tokenMatch ? decodeURIComponent(tokenMatch[1]) : "";
     expect(token).toBeTruthy();
 
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
     // Verify session row exists in DB
     const sessionInDb = await prisma.session.findUnique({
-      where: { token },
+      where: { tokenHash },
       include: { user: true },
     });
     expect(sessionInDb).not.toBeNull();
