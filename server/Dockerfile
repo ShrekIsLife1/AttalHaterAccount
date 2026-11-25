@@ -18,7 +18,7 @@ RUN apk add --no-cache openssl
 
 # --- Install dependencies (cached until package*.json changes) ----------------
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 
 # --- Generate Prisma client ---------------------------------------------------
 # CHANGE ME: remove or replace if your stack does not use Prisma.
@@ -33,6 +33,8 @@ COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN npm run build && chmod +x ./docker-entrypoint.sh
 
 # --- Runtime settings ---------------------------------------------------------
+ARG GIT_SHA="dev"
+ENV GIT_SHA=${GIT_SHA}
 ENV NODE_ENV=production
 ENV TZ=Asia/Bangkok
 # CHANGE ME: port your backend listens on (must match docker-compose.yml).

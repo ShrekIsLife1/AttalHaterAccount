@@ -44,3 +44,37 @@ Every setting required by the application is sourced exclusively from the proces
 - `GET /api/health` — Lightweight probe; returns `200 { "status": "ok", "service": "TokTickIT API" }` without accessing the database.
 - `GET /api/ready` — Readiness probe; queries database via `SELECT 1`. Returns `200 { "status": "ready", "db": "connected" }` when healthy, or `503 { "status": "not_ready", "db": "disconnected" }` if unreachable.
 - `GET /api/version` — Version endpoint; returns `200 { "commit": "<GIT_SHA>" }` without exposing internal environment dumps or stack traces.
+
+---
+
+## 3. Docker Containerization & Local Stack Verification (Issue #18)
+
+### Container Architecture & Multi-Stage Build
+The unified production container is specified in the root `Dockerfile` and builds both frontend and backend into a single lightweight runtime image:
+1. **Stage 1 (`client-builder`)**: Compiles React Vite SPA to static assets in `/app/client/dist`.
+2. **Stage 2 (`server-builder`)**: Compiles TypeScript backend and generates Prisma Client.
+3. **Stage 3 (`production`)**: Alpine-based minimal Node.js runtime (`node:24-alpine`):
+   - Runs as non-root user `USER node` (UID 1000).
+   - Injects `GIT_SHA` via build argument `ARG GIT_SHA="dev"` / `ENV GIT_SHA=${GIT_SHA}`.
+   - Listens on port `3000` (configurable via `PORT` environment variable for Cloud Run).
+   - Serves API routes on `/api/*` and falls back to static SPA `index.html` for client routes.
+   - Entrypoint uses `exec "$@"` to pass signals (SIGTERM) directly to PID 1 for graceful Cloud Run termination.
+
+### Local Docker Compose Stack (`docker-compose.yml`)
+The local development and testing environment orchestrates four container services:
+- `unimerch-db`: PostgreSQL 16 Alpine with persistent named volume `postgres_data` and healthcheck via `pg_isready`.
+- `unimerch-migrate`: Transient service running `npx prisma migrate deploy && npm run prisma:seed`.
+- `unimerch-server`: Express backend serving the application and probes on port 3000.
+- `unimerch-client`: Nginx preview proxy for client development on port 5173.
+
+### Check C-03 Verification Evidence
+
+| Test ID | Command | Verified Behavior / Expected Output | Result |
+|---|---|---|:---:|
+| **TEST-L5-10** | `docker build --build-arg GIT_SHA=$(git rev-parse HEAD) -t unimerch:test .` | Multi-stage build succeeds from clean tree without local node_modules or .env | Pass |
+| **TEST-L5-11** | `docker compose up -d --build` | DB becomes healthy, migration & seed exits 0, server responds to `/api/ready` | Pass |
+| **TEST-L5-12** | `docker run --rm unimerch:test id -u` | Returns `1000` (non-root `node` user); zero `.env` or `.git` files in container | Pass |
+| **TEST-L5-13** | `curl -s localhost:3000/` & `curl -s localhost:3000/api/products` | UI served (`<html...`) and API returns seeded catalog JSON | Pass |
+| **TEST-L5-14** | `curl -s localhost:3000/api/version` | Returns `{ "commit": "<GIT_SHA>" }` matching `git rev-parse HEAD` | Pass |
+
+Automated verification script: `scripts/test-container.sh`.
