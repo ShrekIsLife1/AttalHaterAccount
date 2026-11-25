@@ -3,7 +3,7 @@
 # ##############################################################################
 # WHAT THIS WORKFLOW DOES
 #   Runs the project's checks and is used in two ways:
-#     1) directly on every pull request to `main` (and manually), and
+#     1) directly on every pull request to `main` and `lab5-staging` (and manually), and
 #     2) as a REUSABLE workflow called by deploy.yml (`workflow_call`) so the
 #        deploy only starts after these checks pass.
 #   Steps: offline deploy-script tests -> backend tests (real PostgreSQL service)
@@ -14,19 +14,6 @@
 #   - job id : test-and-docker
 #   - deploy.yml uses `environment: demo` and the 4 variables GCP_PROJECT_ID,
 #     GCP_REGION, WIF_PROVIDER, WIF_SERVICE_ACCOUNT — keep those names too.
-#
-# REFERENCES
-#   - Workflow syntax      : https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions
-#   - Reusable workflows   : https://docs.github.com/en/actions/sharing-automations/reusing-workflows
-#   - Service containers   : https://docs.github.com/en/actions/using-containerized-services/about-service-containers
-#   - Concurrency          : https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs
-#   - Pin actions to a SHA : https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions
-#
-# ⭐ CHANGE ME — groups using another tech stack must edit (marked below):
-#   # CHANGE ME: database service image / credentials
-#   # CHANGE ME: language setup steps (Node.js 24, Python 3.14)
-#   # CHANGE ME: install / migrate / seed / test commands, working-directory
-#   # CHANGE ME: docker image tag
 # ##############################################################################
 
 name: CI & Docker Build
@@ -34,13 +21,13 @@ name: CI & Docker Build
 # ------------------------------------------------------------------------------
 # Triggers
 #   workflow_call     : lets deploy.yml reuse this workflow (do not remove).
-#   pull_request/main : checks every PR before merge.
+#   pull_request      : checks every PR targeting main or lab5-staging before merge (R-05, C-01).
 #   workflow_dispatch : manual "Run workflow" button.
 # ------------------------------------------------------------------------------
 on:
   workflow_call:
   pull_request:
-    branches: [main]
+    branches: [main, lab5-staging, sprint1-staging]
   workflow_dispatch:
 
 # Least privilege: this workflow only needs to read the repository.
@@ -60,15 +47,15 @@ jobs:
 
     # --------------------------------------------------------------------------
     # Temporary PostgreSQL used only by the tests. Throw-away CI values, not
-    # real secrets. CHANGE ME: use the database your project needs.
+    # real secrets.
     # --------------------------------------------------------------------------
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: toktickit
-          POSTGRES_PASSWORD: toktickit
-          POSTGRES_DB: toktickit
+          POSTGRES_USER: unimerch
+          POSTGRES_PASSWORD: unimerch_test_password
+          POSTGRES_DB: unimerch_test
         ports:
           - 5432:5432
         # Wait until the DB is healthy before the steps start.
@@ -81,8 +68,6 @@ jobs:
     steps:
       # ------------------------------------------------------------------------
       # 1. Get the source code
-      #    (third-party actions are pinned to a commit SHA; the comment shows the
-      #     version. Dependabot keeps them updated — see .github/dependabot.yml)
       # ------------------------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -90,25 +75,24 @@ jobs:
           persist-credentials: false
 
       # ------------------------------------------------------------------------
-      # 2. Language runtimes
-      #    CHANGE ME: replace with the runtime(s) your stack needs.
+      # 2. Language runtimes (Node.js 20/24 + Python 3.12 for deploy unit tests)
       # ------------------------------------------------------------------------
-      - name: Setup Node.js 24
+      - name: Setup Node.js 20
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
 
-      # Python is only needed for the deploy smoke-test unit tests below.
-      - name: Setup Python 3.14
+      - name: Setup Python 3.12
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14"
+          python-version: "3.12"
 
       # ------------------------------------------------------------------------
       # 3. Deploy scripts: syntax check + offline tests (NO access to GCP)
-      #    ⭐ IMPORTANT: guards deploy.sh / release.sh / smoke_test.py so a broken
-      #    script is caught before it can break a deployment.
-      #    CHANGE ME: keep only the checks for scripts your group actually uses.
       # ------------------------------------------------------------------------
       - name: Check deployment scripts without accessing GCP
         run: |
@@ -119,22 +103,25 @@ jobs:
 
       # ------------------------------------------------------------------------
       # 4. Backend: install -> migrate -> seed -> test
-      #    ⭐ IMPORTANT: a failing test fails the job (and therefore the deploy).
-      #    CHANGE ME: working-directory, DATABASE_URL and every command in `run:`.
+      #    Runs all test suites (Sprint 1, lab-01, and lab5 suites).
       # ------------------------------------------------------------------------
       - name: Install & Test Backend (Prisma Migrate + Seed + Vitest)
         working-directory: ./server
         env:
-          DATABASE_URL: postgresql://toktickit:toktickit@localhost:5432/toktickit?schema=public
+          DATABASE_URL: postgresql://unimerch:unimerch_test_password@localhost:5432/unimerch_test?schema=public
+          SESSION_SECRET: ci-test-session-secret-for-unimerch-backend-testing-32chars
+          PORT: 3000
+          NODE_ENV: test
+          SEED_PASSWORD: ci_seed_test_password_123
         run: |
           npm ci
+          npx prisma generate
           npx prisma migrate deploy
-          npm run prisma:seed
+          npm run seed
           npm test
 
       # ------------------------------------------------------------------------
       # 5. Frontend: install -> test -> production build
-      #    CHANGE ME: remove or replace if there is no separate frontend.
       # ------------------------------------------------------------------------
       - name: Install, Test & Build Frontend (Vitest + Production Build)
         working-directory: ./client
@@ -144,9 +131,8 @@ jobs:
           npm run build
 
       # ------------------------------------------------------------------------
-      # 6. Make sure the production image still builds (image is not pushed here)
-      #    CHANGE ME: image tag.
+      # 6. Make sure the unified production image builds cleanly from repository
       # ------------------------------------------------------------------------
       - name: Verify Unified Production Dockerfile Build
         run: |
-          docker build -t toktickit-lab4:latest .
+          docker build --build-arg GIT_SHA=${{ github.sha }} -t unimerch:ci-test .
