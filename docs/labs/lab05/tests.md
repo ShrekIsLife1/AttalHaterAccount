@@ -6,7 +6,7 @@
 |---|---|---|---|---|:---:|
 | **R-12, Cost Control** | #16 | — | Cloud Setup | GCP portal activation, team resources, budget controls, public repo & push protection | ✅ Done |
 | **R-02, R-04** | #17 | TEST-L5-01..04, L5-08..09 | Unit / API | Config loader, `.env.example`, session DB persistence, safe production seed | ✅ Done |
-| **R-01, C-03** | #18 | TEST-L5-10..14 | Container | Docker multi-stage build from fresh clone, docker-compose local stack, non-root user | 🔲 Planned |
+| **R-01, C-03** | #18 | TEST-L5-10..14 | Container | Docker multi-stage build from fresh clone, docker-compose local stack, non-root user | ✅ Done |
 | **R-05, C-01** | #19 | TEST-L5-15..19 | CI Workflow | GitHub Actions `test-and-docker` job on PRs into `sprint1-staging` and `main` | 🔲 Planned |
 | **R-03, R-04, C-04** | #20 | TEST-L5-20..25 | Live / Smoke | First deployment on Cloud Run, live domain customer order journey, failure rejections | 🔲 Planned |
 | **R-06, R-09, C-02** | #21 | TEST-L5-26..31 | Merge Gate | Workload Identity Federation, branch protection ruleset, failing PR blocked | 🔲 Planned |
@@ -30,3 +30,15 @@
 | **TEST-L5-07** | API | `GET /api/version` returns `GIT_SHA` from environment without leaking sensitive variables | `server/tests/lab5/version.api.test.ts` | Pass |
 | **TEST-L5-08** | API | Session persists across requests and survives app restart via PostgreSQL `Session` table | `server/tests/lab5/session-persistence.api.test.ts` | Pass |
 | **TEST-L5-09** | Unit/API | Seed in production rejects missing or default `SEED_PASSWORD`; seed is strictly idempotent | `server/tests/lab5/seed-config.test.ts` | Pass |
+
+---
+
+## Detailed Test Specifications: Issue #18 (Dockerize Application)
+
+| TEST ID | Level | Test Description | Verification Method | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-10** | Container | Unified multi-stage `Dockerfile` builds cleanly from fresh tree with `GIT_SHA` build arg | `docker build --build-arg GIT_SHA=$(git rev-parse HEAD) -t unimerch:test .` | Pass |
+| **TEST-L5-11** | Container | `docker compose up --build` with `.env.example` starts DB, executes migration/seed, answers `/api/ready` | `docker compose up -d --build && curl -fsS localhost:3000/api/ready` | Pass |
+| **TEST-L5-12** | Container | Non-root runtime user (`USER node`, UID ≠ 0); zero `.env` or `.git` files inside container | `docker run --rm unimerch:test id -u` & `find /app -name '.env*'` | Pass |
+| **TEST-L5-13** | Container | Unified container serves client SPA at `GET /` and API endpoints at `GET /api/products` | `curl -s localhost:3000/ \| grep -i "<html"` & `curl -s localhost:3000/api/products` | Pass |
+| **TEST-L5-14** | Container | `GET /api/version` returns commit SHA exactly matching `GIT_SHA` passed at build time | `curl -s localhost:3000/api/version` matches `git rev-parse HEAD` | Pass |

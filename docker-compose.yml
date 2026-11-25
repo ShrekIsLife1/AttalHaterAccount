@@ -4,15 +4,15 @@ services:
     container_name: unimerch-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-unimerch}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-unimerch}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-unimerch}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-unimerch} -d ${POSTGRES_DB:-unimerch}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-unimerch}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -27,12 +27,13 @@ services:
       db:
         condition: service_healthy
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-unimerch}:${POSTGRES_PASSWORD:-unimerch}@db:5432/${POSTGRES_DB:-unimerch}?schema=public
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-unimerch}?schema=public
+      SEED_PASSWORD: ${SEED_PASSWORD:-password123}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-AdminInitial123!}
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-DemoInitial123!}
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
-    command: ["sh", "-c", "npx prisma migrate deploy && npm run seed"]
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed"]
 
   server:
     build:
@@ -46,10 +47,13 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-production}
       TZ: Asia/Bangkok
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-unimerch}:${POSTGRES_PASSWORD:-unimerch}@db:5432/${POSTGRES_DB:-unimerch}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-unimerch}?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:-unimerch-super-secret-session-key-change-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      GIT_SHA: ${GIT_SHA:-dev}
     ports:
       - "3000:3000"
 

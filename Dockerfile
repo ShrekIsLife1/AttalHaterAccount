@@ -44,7 +44,7 @@ FROM node:24-alpine AS client-builder
 WORKDIR /app/client
 # Copy package files first so `npm ci` is cached until dependencies change.
 COPY client/package*.json ./
-RUN npm ci
+RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 COPY client/ ./
 # Empty API URL => the SPA calls the API on the same origin (same container).
 ENV VITE_API_URL=""
@@ -59,7 +59,7 @@ WORKDIR /app/server
 # Prisma needs openssl on alpine.
 RUN apk add --no-cache openssl
 COPY server/package*.json ./
-RUN npm ci
+RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 COPY server/ ./
 # CHANGE ME: `prisma generate` is Prisma-specific; drop it for other ORMs.
 RUN npx prisma generate && npm run build
@@ -85,6 +85,8 @@ COPY --from=client-builder /app/client/dist /app/client/dist
 RUN chmod +x ./docker-entrypoint.sh
 
 # --- Runtime configuration ----------------------------------------------------
+ARG GIT_SHA="dev"
+ENV GIT_SHA=${GIT_SHA}
 ENV NODE_ENV=production
 ENV TZ=Asia/Bangkok
 # CHANGE ME: PORT must match your app AND `--port` in deploy/deploy.sh (step 11).
