@@ -112,7 +112,7 @@ jobs:
           SESSION_SECRET: ci-test-session-secret-for-unimerch-backend-testing-32chars
           PORT: 3000
           NODE_ENV: test
-          SEED_PASSWORD: ci_seed_test_password_123
+          SEED_PASSWORD: password123
         run: |
           npm ci
           npx prisma generate
