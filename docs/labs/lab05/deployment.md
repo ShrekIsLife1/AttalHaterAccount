@@ -459,3 +459,14 @@ Triggered by `workflow_dispatch` with `image_tag` = previous commit SHA:
 | **TEST-L5-45** | Persistence | Prisma migrations are strictly additive (no DROP) | `grep -rn "DROP TABLE\|DROP COLUMN" prisma/migrations/` returns zero matches |
 | **TEST-L5-46** | Persistence | Data survives Cloud SQL pause/resume cycle | Orders intact after `--activation-policy=ALWAYS` resume (see Issue #24 evidence) |
 | **TEST-L5-47** | Rollback | Fast rollback via `image_tag` leaves Cloud SQL unchanged | `GET /api/version` returns prior SHA; orders accessible post-rollback |
+
+---
+
+## 9. Final Release & Documentation Sign-Off (Issue #25)
+
+### Final Checklist
+- [x] **Public Repository (R-12):** `https://github.com/ShrekIsLife1/AttalHaterAccount` accessible without authentication.
+- [x] **Secret Scan:** Zero `.env`, `.key`, `.pem`, or credential files tracked in Git (`git ls-files` verified); GitHub Secret Scanning & Push Protection active.
+- [x] **All Tests Passing (TEST-L5-01..58):** Backend, frontend, deploy stubs, container, CI/CD, live Cloud Run, persistence, and cost-control checks documented in `docs/labs/lab05/tests.md`.
+- [x] **Minimalist Deliverable Report:** `docs/deliverable-2/PDF_DRAFT.md` and `docs/deliverable-2/lab5_sec1_AttalHaterAccount.pdf` prepared for LEB2 submission.
+- [x] **Inactivity Safety:** Pause/resume procedure documented in Section 7 so Cloud SQL compute charges remain controlled after grading.
