@@ -3,6 +3,17 @@ import bcrypt from "bcryptjs";
 
 export async function runSeed() {
   const prisma = getPrisma();
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isProduction) {
+    if (!process.env.SEED_PASSWORD) {
+      throw new Error("Missing required environment variable: SEED_PASSWORD is required in production mode");
+    }
+    if (process.env.SEED_PASSWORD === "password123") {
+      throw new Error("Insecure SEED_PASSWORD detected: 'password123' cannot be used in production mode");
+    }
+  }
+
   const defaultPassword = process.env.SEED_PASSWORD || "password123";
   const passwordHash = await bcrypt.hash(defaultPassword, 10);
 

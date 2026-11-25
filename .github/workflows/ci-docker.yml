@@ -1,0 +1,138 @@
+# ##############################################################################
+# CI — "CI & Docker Build"
+# ##############################################################################
+# WHAT THIS WORKFLOW DOES
+#   Runs the project's checks and is used in two ways:
+#     1) directly on every pull request to `main` and `lab5-staging` (and manually), and
+#     2) as a REUSABLE workflow called by deploy.yml (`workflow_call`) so the
+#        deploy only starts after these checks pass.
+#   Steps: offline deploy-script tests -> backend tests (real PostgreSQL service)
+#          -> frontend tests + build -> verify the production Dockerfile builds.
+#   It does NOT deploy anything.
+#
+# ⚠️ DO NOT RENAME (the lab guide refers to these names):
+#   - job id : test-and-docker
+#   - deploy.yml uses `environment: demo` and the 4 variables GCP_PROJECT_ID,
+#     GCP_REGION, WIF_PROVIDER, WIF_SERVICE_ACCOUNT — keep those names too.
+# ##############################################################################
+
+name: CI & Docker Build
+
+# ------------------------------------------------------------------------------
+# Triggers
+#   workflow_call     : lets deploy.yml reuse this workflow (do not remove).
+#   pull_request      : checks every PR targeting main or lab5-staging before merge (R-05, C-01).
+#   workflow_dispatch : manual "Run workflow" button.
+# ------------------------------------------------------------------------------
+on:
+  workflow_call:
+  pull_request:
+    branches: [main, lab5-staging, sprint1-staging]
+  workflow_dispatch:
+
+# Least privilege: this workflow only needs to read the repository.
+permissions:
+  contents: read
+
+# A newer run on the same ref cancels the older one (saves minutes).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ⚠️ Job id must stay `test-and-docker`.
+  test-and-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # --------------------------------------------------------------------------
+    # Temporary PostgreSQL used only by the tests. Throw-away CI values, not
+    # real secrets.
+    # --------------------------------------------------------------------------
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: unimerch
+          POSTGRES_PASSWORD: unimerch_test_password
+          POSTGRES_DB: unimerch_test
+        ports:
+          - 5432:5432
+        # Wait until the DB is healthy before the steps start.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      # ------------------------------------------------------------------------
+      # 1. Get the source code
+      # ------------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # ------------------------------------------------------------------------
+      # 2. Language runtimes (Node.js 20/24 + Python 3.12 for deploy unit tests)
+      # ------------------------------------------------------------------------
+      - name: Setup Node.js 20
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      # ------------------------------------------------------------------------
+      # 3. Deploy scripts: syntax check + offline tests (NO access to GCP)
+      # ------------------------------------------------------------------------
+      - name: Check deployment scripts without accessing GCP
+        run: |
+          bash -n deploy/deploy.sh deploy/teardown.sh deploy/release.sh
+          bash deploy/tests/test_deploy_stub.sh
+          bash deploy/tests/test_release_stub.sh
+          python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
+
+      # ------------------------------------------------------------------------
+      # 4. Backend: install -> migrate -> seed -> test
+      #    Runs all test suites (Sprint 1, lab-01, and lab5 suites).
+      # ------------------------------------------------------------------------
+      - name: Install & Test Backend (Prisma Migrate + Seed + Vitest)
+        working-directory: ./server
+        env:
+          DATABASE_URL: postgresql://unimerch:unimerch_test_password@localhost:5432/unimerch_test?schema=public
+          SESSION_SECRET: ci-test-session-secret-for-unimerch-backend-testing-32chars
+          PORT: 3000
+          NODE_ENV: test
+          SEED_PASSWORD: password123
+        run: |
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run seed
+          npm test
+
+      # ------------------------------------------------------------------------
+      # 5. Frontend: install -> test -> production build
+      # ------------------------------------------------------------------------
+      - name: Install, Test & Build Frontend (Vitest + Production Build)
+        working-directory: ./client
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      # ------------------------------------------------------------------------
+      # 6. Make sure the unified production image builds cleanly from repository
+      # ------------------------------------------------------------------------
+      - name: Verify Unified Production Dockerfile Build
+        run: |
+          docker build --build-arg GIT_SHA=${{ github.sha }} -t unimerch:ci-test .
