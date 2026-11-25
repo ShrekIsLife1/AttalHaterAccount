@@ -12,7 +12,7 @@
 | **R-06, R-09, C-02** | #21 | TEST-L5-26..31 | Merge Gate | Workload Identity Federation, branch protection ruleset, failing PR blocked | 🔲 Planned |
 | **R-07, R-08, C-06** | #22 | TEST-L5-32..42 | Release Pipeline | `deploy.yml`, automated smoke test, release by commit SHA digest | 🔲 Planned |
 | **R-04, C-05** | #23 | TEST-L5-43..47 | Persistence / Rollback | Data persistence across service restart and redeploy, additive migrations, rollback | 🔲 Planned |
-| **Cost Control** | #24 | TEST-L5-48..51 | Operations | Pause/resume Cloud SQL procedure, Cloud Run min=0 instances, spend tracking | 🔲 Planned |
+| **Cost Control** | #24 | TEST-L5-48..51 | Operations | Pause/resume Cloud SQL procedure, Cloud Run min=0 instances, spend tracking | ✅ Done |
 | **R-08, R-11, DoD** | #25 | TEST-L5-52..58 | Documentation | Final release verification, `deployment.md`, secret scan, and LEB2 deliverable PDF | 🔲 Planned |
 
 ---
@@ -67,3 +67,15 @@
 | **TEST-L5-23** | Live (C-04) | Role-Based Access Control: customer is forbidden from accessing operator endpoints (`/api/test/operator-only` -> 403 Forbidden) | RBAC boundary verification on live service | Pass |
 | **TEST-L5-24** | Live | End-to-end database persistence: created order is retrieved from Cloud SQL via `/api/orders/my-orders` across page reloads | UI session & order persistence verification | Pass |
 | **TEST-L5-25** | Config | Cloud Run & Cloud SQL configuration constraints: min instances 0, max instances ≤ 3, smallest tier Cloud SQL, secrets stored exclusively in Secret Manager | `gcloud run services describe s3c35c9bd` inspection | Pass |
+
+---
+
+## Detailed Test Specifications: Issue #24 (Cost Control: Pause & Resume)
+
+| TEST ID | Level | Test Description | Verification Method / Evidence | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-48** | Operations | Cloud SQL resume procedure: patching instance with `--activation-policy=ALWAYS` transitions state to `RUNNABLE`, Cloud Run service ready probe `/api/ready` recovers to 200 `{ "status": "ready", "db": "connected" }` | CLI patch execution and curl `/api/ready` | Pass |
+| **TEST-L5-49** | Operations | Database persistence after pause/resume cycle: existing database records (users, products, customer orders placed in Issue #20) remain fully intact without data loss or corruption | Verify `GET /api/orders/my-orders` and catalog after resume | Pass |
+| **TEST-L5-50** | Operations | Graceful failure during paused state: when Cloud SQL is stopped (`--activation-policy=NEVER`) and public ingress revoked, public callers receive 403 Forbidden; authenticated probe requests return clean 503 `{ "status": "not_ready", "db": "disconnected" }` without container crash or secret leakage | `curl -i` verification against paused service | Pass |
+| **TEST-L5-51** | Config | Serverless scale-to-zero and quota compliance: Cloud Run service is configured with `min-instances=0` (scales to zero when idle, $0 compute charge), `max-instances=3`, memory `512Mi`; GCP budget alert configured with 50%, 90%, 100% notification thresholds | `gcloud run services describe s3c35c9bd` inspection & budget alert check | Pass |
+

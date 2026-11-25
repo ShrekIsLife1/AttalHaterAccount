@@ -66,7 +66,7 @@ SECRET_ADMIN_PASS="s3c35c9bd-admin-password"
 SECRET_DEMO_PASS="s3c35c9bd-demo-password"
 
 echo "=================================================================="
-echo "WARNING: This will permanently delete TokTickIT resources in:"
+echo "WARNING: This will permanently delete UniMerch resources in:"
 echo "  Project : ${PROJECT_ID}"
 echo "  Region  : ${REGION}"
 echo "Resources to be deleted:"

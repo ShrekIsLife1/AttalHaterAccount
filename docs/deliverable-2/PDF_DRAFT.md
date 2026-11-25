@@ -35,11 +35,11 @@
 | **#17** | Cloud-ready configuration, probes, `.env.example` | **Cl** | Ba | [PR #45](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/45) | ✅ Merged |
 | **#18** | Dockerize application & container verification | **Ba** | Cl | [PR #46](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/46) | ✅ Merged |
 | **#19** | CI on Pull Requests (`test-and-docker`, C-01) | **Cl** | Ba | [PR #47](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/47) | ✅ Merged |
-| **#20** | First deployment to GCP & domain journey (C-04) | **Ba** | Cl | *Branch `feature/20-first-gcp-deploy`* | 🟡 In Progress |
+| **#20** | First deployment to GCP & domain journey (C-04) | **Ba** | Cl | [PR #48](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/48) | ✅ Merged |
 | **#21** | GitHub ↔ GCP (WIF) & failing PR gate (C-02) | **Cl** | Ba | *Pending #20* | 🔲 Planned |
 | **#22** | Repeatable deploy pipeline & release commit (C-06) | **Ba** | Cl | *Pending #21* | 🔲 Planned |
 | **#23** | Cloud persistence & rollback verification (C-05) | **Cl** | Ba | *Pending #22* | 🔲 Planned |
-| **#24** | Cost control: pause/resume Cloud SQL & quota audit | **Ba** | Cl | *Pending #20* | 🔲 Planned |
+| **#24** | Cost control: pause/resume Cloud SQL & quota audit | **Ba** | Cl | *Branch `feature/24-pause-resume`* | 🟡 In Review |
 | **#25** | Final deployment documentation & deliverable PDF | **Cl** | Ba | *Pending #24* | 🔲 Planned |
 
 ---
@@ -161,7 +161,39 @@ bash scripts/test-container.sh
 | **TEST-L5-24** | Database persistence | Created customer order visible in "My Orders" (`/api/orders/my-orders`) across page reload |
 | **TEST-L5-25** | Quotas & secret protection | Cloud Run min=0 / max=3; Cloud SQL db-f1-micro; zero plain-text secrets in revision config |
 
+### 3.3 Cost Control, Pause/Resume & Teardown Procedures (Issue #24)
+
+#### Inactivity Billing Architecture
+- **Cloud Run Compute:** Employs dynamic serverless autoscaling with `min-instances=0`. In the absence of incoming HTTP requests, active instances drop to 0 within minutes, resulting in zero idle CPU/RAM billing.
+- **Cloud SQL Compute:** Running `db-f1-micro` instance incurs fixed hourly compute charges (~$10–13/month). Storage (10 GB SSD) incurs ~$1.70/month.
+- **Inactivity Pause Procedure:** Pausing the database stops compute charges while retaining persistent storage data. Revoking `allUsers` invoker prevents accidental external invocation.
+
+#### CLI Inactivity Commands
+```bash
+# PAUSE
+gcloud run services remove-iam-policy-binding s3c35c9bd --member=allUsers --role=roles/run.invoker --region=asia-southeast1 --project=cpe-se-course-2026
+gcloud sql instances patch s3c35c9bd-pg --activation-policy=NEVER --project=cpe-se-course-2026
+
+# RESUME
+gcloud sql instances patch s3c35c9bd-pg --activation-policy=ALWAYS --project=cpe-se-course-2026
+# Wait until state is RUNNABLE, then re-open public traffic:
+gcloud run services add-iam-policy-binding s3c35c9bd --member=allUsers --role=roles/run.invoker --region=asia-southeast1 --project=cpe-se-course-2026
+```
+
+#### Verification Matrix (TEST-L5-48 to TEST-L5-51)
+| Test ID | Verified Behavior | Evidence / Result |
+|---|---|:---:|
+| **TEST-L5-48** | Service resume procedure | Cloud SQL patched `--activation-policy=ALWAYS`; `GET /api/ready` returns 200 `{"status":"ready","db":"connected"}` |
+| **TEST-L5-49** | Database persistence after resume | Previously placed orders remain visible via `/api/orders/my-orders`; schema and products intact |
+| **TEST-L5-50** | Graceful 503 handling while paused | When DB is paused, `GET /api/ready` returns 503 `{"status":"not_ready","db":"disconnected"}`; zero crashes, zero secret leaks |
+| **TEST-L5-51** | Idle scale-to-zero & quota audit | Cloud Run `min-instances=0`, `max-instances=3`, `memory=512Mi`; GCP Budget alert configured with 50%, 90%, 100% notification thresholds |
+
+#### End-of-Term Teardown Safety (`deploy/teardown.sh`)
+- Strictly scheduled for end of academic term after grading confirmation.
+- Contains interactive prompts (`DRY_RUN=1` support), systematically deleting Cloud Run services, migration jobs, Artifact Registry images, and Cloud SQL instances.
+
 *(Persistence across container restart and redeployment to be verified in Issue #23 / Check C-05)*
+
 
 ---
 
