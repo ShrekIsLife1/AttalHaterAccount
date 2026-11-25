@@ -34,7 +34,7 @@
 #   # CHANGE ME: how the migration is run (the Cloud Run job is created by
 #   #            deploy/deploy.sh step 10 — change the command there)
 # ==============================================================================
-set -euo pipefail
+set -euxo pipefail
 
 # ------------------------------------------------------------------------------
 # 1. Read and validate inputs (fail before any GCP call)
