@@ -9,7 +9,7 @@
 | **R-01, C-03** | #18 | TEST-L5-10..14 | Container | Docker multi-stage build from fresh clone, docker-compose local stack, non-root user | ✅ Done |
 | **R-05, C-01** | #19 | TEST-L5-15..19 | CI Workflow | GitHub Actions `test-and-docker` job on PRs into `lab5-staging` and `main` | ✅ Done |
 | **R-03, R-04, C-04** | #20 | TEST-L5-20..25 | Live / Smoke | First deployment on Cloud Run, live domain customer order journey, failure rejections | ✅ Done |
-| **R-06, R-09, C-02** | #21 | TEST-L5-26..31 | Merge Gate | Workload Identity Federation, branch protection ruleset, failing PR blocked | 🔲 Planned |
+| **R-06, R-09, C-02** | #21 | TEST-L5-26..31 | Merge Gate | Workload Identity Federation, branch protection ruleset, failing PR blocked | ✅ Done |
 | **R-07, R-08, C-06** | #22 | TEST-L5-32..42 | Release Pipeline | `deploy.yml`, automated smoke test, release by commit SHA digest | 🔲 Planned |
 | **R-04, C-05** | #23 | TEST-L5-43..47 | Persistence / Rollback | Data persistence across service restart and redeploy, additive migrations, rollback | 🔲 Planned |
 | **Cost Control** | #24 | TEST-L5-48..51 | Operations | Pause/resume Cloud SQL procedure, Cloud Run min=0 instances, spend tracking | ✅ Done |
@@ -79,3 +79,13 @@
 | **TEST-L5-50** | Operations | Graceful failure during paused state: when Cloud SQL is stopped (`--activation-policy=NEVER`) and public ingress revoked, public callers receive 403 Forbidden; authenticated probe requests return clean 503 `{ "status": "not_ready", "db": "disconnected" }` without container crash or secret leakage | `curl -i` verification against paused service | Pass |
 | **TEST-L5-51** | Config | Serverless scale-to-zero and quota compliance: Cloud Run service is configured with `min-instances=0` (scales to zero when idle, $0 compute charge), `max-instances=3`, memory `512Mi`; GCP budget alert configured with 50%, 90%, 100% notification thresholds | `gcloud run services describe s3c35c9bd` inspection & budget alert check | Pass |
 
+## Detailed Test Specifications: Issue #21 (GitHub ↔ GCP Merge Gate)
+
+| TEST ID | Level | Test Description | Verification Method / Evidence | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-26** | WIF | GitHub Actions authenticates to GCP using Workload Identity Federation (no long-lived service-account JSON key stored in GitHub Secrets) | `deploy.yml` step "Authenticate to Google Cloud without a key" uses `google-github-actions/auth` with `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` variables from `environment: demo`; zero `credentials_json` present in workflow | Pass |
+| **TEST-L5-27** | WIF | WIF provider and service account are stored as repository/environment variables (not secrets) in `Settings → Environments → demo` | GitHub `Settings → Environments → demo` Variables section shows `WIF_PROVIDER` (projects/.../workloadIdentityPools/...) and `WIF_SERVICE_ACCOUNT` (`s3c35c9bd-runner@cpe-se-course-2026.iam.gserviceaccount.com`) | Pass |
+| **TEST-L5-28** | Branch Protection | `lab5-staging` branch requires the `test-and-docker` status check to pass before any PR can be merged | GitHub `Settings → Branches → lab5-staging` protection rule lists `test-and-docker` as required status check | Pass |
+| **TEST-L5-29** | Branch Protection | `main` branch requires the `test-and-docker` status check to pass before any PR can be merged | GitHub `Settings → Branches → main` protection rule lists `test-and-docker` as required status check | Pass |
+| **TEST-L5-30** | Merge Gate (C-02) | A PR with a deliberately broken test is blocked from merging: GitHub disables the "Merge pull request" button and shows "Required status checks must pass before merging" | Branch `test/intentionally-failing-ci-gate` opened as PR into `lab5-staging`; `test-and-docker` fails (intentional assertion error in `health.api.test.ts`); screenshot shows merge button disabled | Pass |
+| **TEST-L5-31** | Merge Gate (C-02) | A PR with all tests passing is unblocked and can be merged normally | PR #21 (`issue/21-github-gcp-merge-gate` → `lab5-staging`) triggers `test-and-docker`; all checks pass; merge button is enabled | Pass |

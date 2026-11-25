@@ -36,10 +36,10 @@
 | **#18** | Dockerize application & container verification | **Ba** | Cl | [PR #46](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/46) | ✅ Merged |
 | **#19** | CI on Pull Requests (`test-and-docker`, C-01) | **Cl** | Ba | [PR #47](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/47) | ✅ Merged |
 | **#20** | First deployment to GCP & domain journey (C-04) | **Ba** | Cl | [PR #48](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/48) | ✅ Merged |
-| **#21** | GitHub ↔ GCP (WIF) & failing PR gate (C-02) | **Cl** | Ba | *Pending #20* | 🔲 Planned |
+| **#21** | GitHub ↔ GCP (WIF) & failing PR gate (C-02) | **Cl** | Ba | [PR #50](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/50) | ✅ Merged |
 | **#22** | Repeatable deploy pipeline & release commit (C-06) | **Ba** | Cl | *Pending #21* | 🔲 Planned |
 | **#23** | Cloud persistence & rollback verification (C-05) | **Cl** | Ba | *Pending #22* | 🔲 Planned |
-| **#24** | Cost control: pause/resume Cloud SQL & quota audit | **Ba** | Cl | *Branch `feature/24-pause-resume`* | 🟡 In Review |
+| **#24** | Cost control: pause/resume Cloud SQL & quota audit | **Ba** | Cl | [PR #49](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/49) | ✅ Merged |
 | **#25** | Final deployment documentation & deliverable PDF | **Cl** | Ba | *Pending #24* | 🔲 Planned |
 
 ---
@@ -49,8 +49,8 @@
 | Rubric Part | Required Evidence | Check / ID | Artifact / Link / Reference | Verification Result |
 |---|---|:---:|---|---|
 | **Part 0: Team & Index** | Public repo & contribution records | R-10, R-11, R-12 | [GitHub Repository](https://github.com/ShrekIsLife1/AttalHaterAccount) | Incognito verified; alternating roles respected |
-| **Part 1: CI & Quality Gate** | CI workflow & passing PR | C-01, R-05 | `.github/workflows/ci-docker.yml` | *To be captured in #19* |
-| **Part 1: CI & Quality Gate** | Branch protection & blocked failing PR | C-02, R-06 | Temp branch PR & merge gate screenshot | *To be captured in #21* |
+| **Part 1: CI & Quality Gate** | CI workflow & passing PR | C-01, R-05 | `.github/workflows/ci-docker.yml`, [PR #47](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/47) | `test-and-docker` passes on every PR (TEST-L5-15..19) |
+| **Part 1: CI & Quality Gate** | Branch protection & blocked failing PR | C-02, R-06 | Branch `test/intentionally-failing-ci-gate` PR; `deployment.md` Sec 5 | Merge gate verified — blocked PR + passing PR (TEST-L5-26..31) |
 | **Part 2: Docker & Config** | Unified multi-stage Dockerfile & clean build | C-03, R-01 | [Dockerfile](file:///home/lapulga/Documents/cours/Thailande/SWE/lab%20duo/AttalHaterAccount/Dockerfile), `TEST-L5-10` | Builds cleanly from clean tree with GIT_SHA |
 | **Part 2: Docker & Config** | Local compose stack runs with `.env.example` | C-03, R-01 | [docker-compose.yml](file:///home/lapulga/Documents/cours/Thailande/SWE/lab%20duo/AttalHaterAccount/docker-compose.yml), `TEST-L5-11` | DB healthy, migrations pass, `/api/ready` 200 |
 | **Part 2: Docker & Config** | Non-root user & zero secrets baked in | R-01, R-02 | `TEST-L5-12` (`node` UID 1000) | No `.env` or `.git` in image |
@@ -84,6 +84,31 @@
 - Every PR into `lab5-staging` triggers `test-and-docker`.
 - Zero bypasses (`continue-on-error: false`); all test assertions must pass for the check to succeed.
 - Comprehensive test results and counts are reported across backend, frontend, deploy stubs, and container build.
+
+### 1.3 Check C-02: Branch Protection & Failing PR Merge Gate (Issue #21)
+
+**Workload Identity Federation (R-06, R-09):**
+- GitHub Actions authenticates to GCP using short-lived OIDC tokens via `google-github-actions/auth@v3` — no long-lived service-account JSON key is stored in GitHub.
+- WIF provider and service account are stored as repository variables (`WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`) in `Settings → Environments → demo`.
+- The `deploy.yml` job authenticates without `credentials_json`; the token expires after 1 hour.
+
+**Branch Protection Ruleset (R-09):**
+- Both `lab5-staging` and `main` branches have branch protection rules requiring `test-and-docker` to pass before any PR can be merged.
+- GitHub blocks the "Merge pull request" button for any PR where `test-and-docker` has not completed successfully.
+
+**Failing PR Demonstration (C-02):**
+- Branch `test/intentionally-failing-ci-gate` was created from `lab5-staging` with a deliberately broken assertion (`expect(true).toBe(false)` in the health test).
+- A PR was opened targeting `lab5-staging`; `test-and-docker` failed; GitHub displayed **"Required status checks must pass before merging"** and disabled the merge button.
+- The temporary branch was closed without merging after capturing the evidence.
+
+| Test ID | Criterion | Result |
+|---|---|:---:|
+| **TEST-L5-26** | WIF: no JSON key; OIDC exchange via `google-github-actions/auth` | Pass |
+| **TEST-L5-27** | WIF variables in `Settings → Environments → demo` | Pass |
+| **TEST-L5-28** | `lab5-staging` requires `test-and-docker` as required status check | Pass |
+| **TEST-L5-29** | `main` requires `test-and-docker` as required status check | Pass |
+| **TEST-L5-30** | Failing PR blocked: merge button disabled, "Required status checks must pass" shown | Pass |
+| **TEST-L5-31** | Passing PR (this PR #50) unblocked: all checks pass, merge enabled | Pass |
 
 ---
 
