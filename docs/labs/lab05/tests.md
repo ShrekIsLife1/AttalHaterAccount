@@ -8,7 +8,7 @@
 | **R-02, R-04** | #17 | TEST-L5-01..04, L5-08..09 | Unit / API | Config loader, `.env.example`, session DB persistence, safe production seed | ✅ Done |
 | **R-01, C-03** | #18 | TEST-L5-10..14 | Container | Docker multi-stage build from fresh clone, docker-compose local stack, non-root user | ✅ Done |
 | **R-05, C-01** | #19 | TEST-L5-15..19 | CI Workflow | GitHub Actions `test-and-docker` job on PRs into `lab5-staging` and `main` | ✅ Done |
-| **R-03, R-04, C-04** | #20 | TEST-L5-20..25 | Live / Smoke | First deployment on Cloud Run, live domain customer order journey, failure rejections | 🔲 Planned |
+| **R-03, R-04, C-04** | #20 | TEST-L5-20..25 | Live / Smoke | First deployment on Cloud Run, live domain customer order journey, failure rejections | ✅ Done |
 | **R-06, R-09, C-02** | #21 | TEST-L5-26..31 | Merge Gate | Workload Identity Federation, branch protection ruleset, failing PR blocked | 🔲 Planned |
 | **R-07, R-08, C-06** | #22 | TEST-L5-32..42 | Release Pipeline | `deploy.yml`, automated smoke test, release by commit SHA digest | 🔲 Planned |
 | **R-04, C-05** | #23 | TEST-L5-43..47 | Persistence / Rollback | Data persistence across service restart and redeploy, additive migrations, rollback | 🔲 Planned |
@@ -54,3 +54,16 @@
 | **TEST-L5-17** | CI | Workflow fails when any test step fails; zero `continue-on-error` or `\|\| true` bypasses | Workflow review of `.github/workflows/ci-docker.yml` | Pass |
 | **TEST-L5-18** | CI | CI triggers consistently on PRs into both `lab5-staging` and `main`, as well as on `workflow_dispatch` | Workflow triggers `pull_request` branches config | Pass |
 | **TEST-L5-19** | CI | Offline deploy script stubs (`test_deploy_stub.sh`, `test_release_stub.sh`, `test_smoke.py`) execute in CI before backend tests | CI step 3 execution | Pass |
+
+---
+
+## Detailed Test Specifications: Issue #20 (First Deployment to GCP)
+
+| TEST ID | Level | Test Description | Verification Method / Evidence | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-20** | Live | Public endpoint health & readiness: `/api/health` 200, `/api/ready` `db:connected`, `/` serves HTML, `/api/products` returns catalog | `curl -fsS https://s3c35c9bd-4d7hbszvwq-as.a.run.app/api/ready` | Pass |
+| **TEST-L5-21** | Live (C-04) | Full Customer purchasing domain journey: customer logs in -> adds products to cart -> submits order -> receives order detail with server-calculated price | Manual / E2E journey on live Cloud Run URL | Pass |
+| **TEST-L5-22** | Live (C-04) | Business rule validation: placing order with invalid quantity or out-of-stock item is rejected with 400/409, inventory unchanged | API / UI rejection check on live service | Pass |
+| **TEST-L5-23** | Live (C-04) | Role-Based Access Control: customer is forbidden from accessing operator endpoints (`/api/test/operator-only` -> 403 Forbidden) | RBAC boundary verification on live service | Pass |
+| **TEST-L5-24** | Live | End-to-end database persistence: created order is retrieved from Cloud SQL via `/api/orders/my-orders` across page reloads | UI session & order persistence verification | Pass |
+| **TEST-L5-25** | Config | Cloud Run & Cloud SQL configuration constraints: min instances 0, max instances ≤ 3, smallest tier Cloud SQL, secrets stored exclusively in Secret Manager | `gcloud run services describe s3c35c9bd` inspection | Pass |
