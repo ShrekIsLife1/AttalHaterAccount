@@ -34,8 +34,8 @@
 | **#16** | GCP account, project, budget alert & baseline | **Ba** | Cl | [PR #44](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/44) | ✅ Merged |
 | **#17** | Cloud-ready configuration, probes, `.env.example` | **Cl** | Ba | [PR #45](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/45) | ✅ Merged |
 | **#18** | Dockerize application & container verification | **Ba** | Cl | [PR #46](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/46) | ✅ Merged |
-| **#19** | CI on Pull Requests (`test-and-docker`, C-01) | **Cl** | Ba | *Branch `issue/19-ci-pull-requests`* | 🟡 In Review |
-| **#20** | First deployment to GCP & domain journey (C-04) | **Ba** | Cl | *Pending #19* | 🔲 Planned |
+| **#19** | CI on Pull Requests (`test-and-docker`, C-01) | **Cl** | Ba | [PR #47](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/47) | ✅ Merged |
+| **#20** | First deployment to GCP & domain journey (C-04) | **Ba** | Cl | *Branch `feature/20-first-gcp-deploy`* | 🟡 In Progress |
 | **#21** | GitHub ↔ GCP (WIF) & failing PR gate (C-02) | **Cl** | Ba | *Pending #20* | 🔲 Planned |
 | **#22** | Repeatable deploy pipeline & release commit (C-06) | **Ba** | Cl | *Pending #21* | 🔲 Planned |
 | **#23** | Cloud persistence & rollback verification (C-05) | **Cl** | Ba | *Pending #22* | 🔲 Planned |
@@ -134,11 +134,34 @@ bash scripts/test-container.sh
 ### 3.1 Course GCP Infrastructure Setup (Issue #16)
 - Course Project ID: `cpe-se-course-2026` (Region: `asia-southeast1`)
 - Team Prefix: `s3c35c9bd`
-- Dedicated Smallest-Tier Cloud SQL PostgreSQL Instance provisioned.
+- Dedicated Smallest-Tier Cloud SQL PostgreSQL Instance provisioned: `s3c35c9bd-pg`.
 - Cloud Run Service (`s3c35c9bd`) and Migration Job (`s3c35c9bd-migrate`) created.
 - Budget alert configured with thresholds (50%, 90%, 100%) and notification to team.
 
-*(Live URL verification C-04 and persistence checks C-05 to be completed in Issues #20 & #23)*
+### 3.2 First Cloud Deployment & Live Domain Journey (Issue #20 / Check C-04)
+- **Live Public URL:** `https://s3c35c9bd-4d7hbszvwq-as.a.run.app`
+- **Cloud Run Service Configuration:**
+  - Runtime image: `asia-southeast1-docker.pkg.dev/cpe-se-course-2026/s3c35c9bd/s3c35c9bd:latest`
+  - Port: `3000` (non-root `USER node`)
+  - Resource limits: `512Mi` RAM, `1` vCPU, `min-instances=0`, `max-instances=3`
+  - Dedicated IAM Service Account: `s3c35c9bd-runner@cpe-se-course-2026.iam.gserviceaccount.com`
+  - Secrets injected via Secret Manager: `DATABASE_URL=s3c35c9bd-database-url:latest`
+- **Migration & Idempotent Seed:**
+  - Executed via Cloud Run Job `s3c35c9bd-migrate` using `npx prisma migrate deploy && npm run prisma:seed`.
+  - Cloud SQL connectivity verified via Unix socket proxy.
+
+#### Check C-04 Live Verification Summary
+
+| Test ID | Criterion Proved | Verification Result & Evidence |
+|---|---|:---:|
+| **TEST-L5-20** | Live health & ready probes | `GET /api/ready` returns 200 `{ "status": "ready", "db": "connected" }` |
+| **TEST-L5-21** | Customer ordering journey | Customer signs in -> adds products to cart -> checkout places order -> order detail displays server-calculated total |
+| **TEST-L5-22** | Business rule rejection | Ordering zero quantity or unavailable product rejected with 400/409; stock preserved |
+| **TEST-L5-23** | RBAC boundary security | Customer prevented from accessing operator routes (`/api/test/operator-only` returns 403 Forbidden) |
+| **TEST-L5-24** | Database persistence | Created customer order visible in "My Orders" (`/api/orders/my-orders`) across page reload |
+| **TEST-L5-25** | Quotas & secret protection | Cloud Run min=0 / max=3; Cloud SQL db-f1-micro; zero plain-text secrets in revision config |
+
+*(Persistence across container restart and redeployment to be verified in Issue #23 / Check C-05)*
 
 ---
 

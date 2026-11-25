@@ -78,3 +78,48 @@ The local development and testing environment orchestrates four container servic
 | **TEST-L5-14** | `curl -s localhost:3000/api/version` | Returns `{ "commit": "<GIT_SHA>" }` matching `git rev-parse HEAD` | Pass |
 
 Automated verification script: `scripts/test-container.sh`.
+
+---
+
+## 4. First Cloud Deployment & Live Domain Verification (Issue #20)
+
+### Cloud Architecture & Provisioned Infrastructure
+- **GCP Project:** `cpe-se-course-2026` (Region: `asia-southeast1`)
+- **Team Resource Prefix:** `s3c35c9bd`
+- **Cloud Run Runtime Service:** `s3c35c9bd`
+  - Live Public URL: `https://s3c35c9bd-4d7hbszvwq-as.a.run.app`
+  - Port: `3000`
+  - Memory: `512Mi`, CPU: `1`
+  - Scaling: Min instances `0` (scales to zero when idle), Max instances `3`
+  - Service Account: `s3c35c9bd-runner@cpe-se-course-2026.iam.gserviceaccount.com`
+- **Cloud Run Migration Job:** `s3c35c9bd-migrate`
+  - Executes: `sh -c "npx prisma migrate deploy && npm run prisma:seed"`
+  - Cloud SQL Connection: Attached via Unix socket `/cloudsql/cpe-se-course-2026:asia-southeast1:s3c35c9bd-pg`
+- **Cloud SQL PostgreSQL Instance:** `s3c35c9bd-pg`
+  - Database: `s3c35c9bd`
+  - User: `s3c35c9bd`
+  - Tier: Smallest `db-f1-micro`, storage auto-increase disabled (fixed 10GB SSD)
+- **Secret Manager Secrets:**
+  - `s3c35c9bd-database-url`: Sourced by Cloud Run service and migration job
+  - `s3c35c9bd-admin-password`: Bootstrap operator credentials
+  - `s3c35c9bd-demo-password`: Seed password for initial demo customer and operator accounts
+
+### Deployment Execution via Cloud Shell
+```bash
+# 1. Inspect dry-run commands
+DRY_RUN=1 PROJECT_ID="cpe-se-course-2026" REGION="asia-southeast1" bash deploy/deploy.sh
+
+# 2. Execute idempotent deployment
+PROJECT_ID="cpe-se-course-2026" REGION="asia-southeast1" bash deploy/deploy.sh --demo
+```
+
+### Check C-04 Live Domain Verification Matrix
+
+| Test ID | Level | Verification Criterion | Verification Method / Command | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-20** | Live | Public endpoint health & readiness | `curl -fsS https://s3c35c9bd-4d7hbszvwq-as.a.run.app/api/ready` returns `{"status":"ready","db":"connected"}` | Pass |
+| **TEST-L5-21** | Live | Customer order journey (F-01..04) | Sign in as `customer1@example.com` -> browse products -> place order -> verify order detail and server-computed total | Pass |
+| **TEST-L5-22** | Live | Business rule rejection (BR-04) | Ordering quantity 0 or out-of-stock product rejected with 400/409, inventory unaffected | Pass |
+| **TEST-L5-23** | Live | RBAC boundary security (BR-08) | Customer accessing operator routes (`/api/test/operator-only` or operator screens) receives 403 Forbidden | Pass |
+| **TEST-L5-24** | Live | Database persistence across reload | Created order appears in "My Orders" (`/api/orders/my-orders`) and persists across page reloads | Pass |
+| **TEST-L5-25** | Config | Resource quotas and secret safety | Cloud Run `min=0`, `max=3`, Cloud SQL `db-f1-micro`, zero secrets in revision environment | Pass |
