@@ -1,0 +1,581 @@
+--- a/deploy/deploy.sh
++++ b/deploy/deploy.sh
+@@ -46,7 +46,7 @@
+ # ------------------------------------------------------------------------------
+ # Settings & argument parsing
+ # ------------------------------------------------------------------------------
+-DRY_RUN="${DRY_RUN:-0}"
++DRY_RUN="${DRY_RUN:-1}"
+ # CHANGE ME: default region if your group uses another one.
+ REGION="${REGION:-asia-southeast1}"
+ SEED_DEMO_DATA="false"
+@@ -87,20 +87,11 @@
+ }
+ 
+ # Resolve the GCP project: $PROJECT_ID, else the active gcloud project.
+-if [ "$DRY_RUN" = "1" ]; then
+-  PROJECT_ID="${PROJECT_ID:-example-gcp-project}"
+-else
+-  PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || true)}"
+-  if [ -z "$PROJECT_ID" ]; then
+-    echo "Error: PROJECT_ID is not set and no active gcloud project was found." >&2
+-    echo "Run: gcloud config set project YOUR_PROJECT_ID" >&2
+-    exit 1
+-  fi
+-fi
+-
+-# ------------------------------------------------------------------------------
+-# Resource names
+-# ------------------------------------------------------------------------------
++# Shared course project: no project discovery or project IAM changes.
++PROJECT_ID="${PROJECT_ID:-cpe-se-course-2026}"
++[[ "$PROJECT_ID" == "cpe-se-course-2026" ]] || { echo 'Wrong course project' >&2; exit 1; }
++REGION="${REGION:-asia-southeast1}"
++[[ "$REGION" == "asia-southeast1" ]] || { echo 'Wrong assigned region' >&2; exit 1; }
+ REPO_NAME="s3c35c9bd"
+ SQL_INSTANCE="s3c35c9bd-pg"
+ DB_NAME="s3c35c9bd"
+@@ -110,7 +101,15 @@
+ SA_NAME="s3c35c9bd-runner"
+ SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+ SQL_CONN_NAME="${PROJECT_ID}:${REGION}:${SQL_INSTANCE}"
+-IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:latest"
++if [ "$DRY_RUN" = "1" ]; then
++  IMAGE_TAG="${IMAGE_TAG:-0000000000000000000000000000000000000000}"
++else
++  IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse HEAD)}"
++  [[ "$(git branch --show-current)" == "main" ]] || { echo 'Deploy reviewed main only' >&2; exit 1; }
++  [[ "$IMAGE_TAG" == "$(git rev-parse HEAD)" ]] || { echo 'IMAGE_TAG must match HEAD' >&2; exit 1; }
++fi
++[[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]] || { echo 'Use full commit SHA' >&2; exit 1; }
++IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:${IMAGE_TAG}"
+ 
+ # Secret Manager secret names (values are never stored in this repo).
+ SECRET_DB_URL="s3c35c9bd-database-url"
+@@ -129,182 +128,27 @@
+ echo "=================================================================="
+ 
+ # ==============================================================================
+-# 1. Enable required GCP APIs
+-# ==============================================================================
+-run_cmd gcloud services enable \
+-  run.googleapis.com \
+-  sqladmin.googleapis.com \
+-  artifactregistry.googleapis.com \
+-  cloudbuild.googleapis.com \
+-  secretmanager.googleapis.com \
+-  iam.googleapis.com \
+-  --project "$PROJECT_ID"
+-
+-# ==============================================================================
+-# 2. Create Artifact Registry repository (idempotent)
+-#    Stores the container images (deploy.yml pushes one per commit SHA).
+-# ==============================================================================
+-if [ "$DRY_RUN" = "1" ]; then
+-  run_cmd gcloud artifacts repositories describe "$REPO_NAME" --location "$REGION" --project "$PROJECT_ID"
+-  run_cmd gcloud artifacts repositories create "$REPO_NAME" --repository-format=docker --location "$REGION" --description="TokTickIT container repository" --project "$PROJECT_ID"
+-else
+-  if ! gcloud artifacts repositories describe "$REPO_NAME" --location "$REGION" --project "$PROJECT_ID" >/dev/null 2>&1; then
+-    run_cmd gcloud artifacts repositories create "$REPO_NAME" \
+-      --repository-format=docker \
+-      --location "$REGION" \
+-      --description="TokTickIT container repository" \
+-      --project "$PROJECT_ID"
+-  fi
+-fi
+-
+-# ==============================================================================
+-# 3. Create Cloud SQL for PostgreSQL instance (idempotent, db-f1-micro requires --edition=enterprise on POSTGRES_16)
+-#    ⭐ IMPORTANT: keep `--edition=enterprise` (lowercase) — required by
+-#       db-f1-micro and asserted by deploy/tests/test_deploy_stub.sh.
+-#       Creating the instance takes several minutes and costs money until
+-#       deploy/teardown.sh is run.
+-#    CHANGE ME: --database-version / --tier for a different database.
+-# ==============================================================================
+-if [ "$DRY_RUN" = "1" ]; then
+-  run_cmd gcloud sql instances describe "$SQL_INSTANCE" --project "$PROJECT_ID"
+-  run_cmd gcloud sql instances create "$SQL_INSTANCE" --database-version=POSTGRES_16 --edition=enterprise --tier=db-f1-micro --region="$REGION" --storage-size=10GB --storage-type=SSD --backup-start-time=03:00 --project "$PROJECT_ID"
+-else
+-  if ! gcloud sql instances describe "$SQL_INSTANCE" --project "$PROJECT_ID" >/dev/null 2>&1; then
+-    run_cmd gcloud sql instances create "$SQL_INSTANCE" \
+-      --database-version=POSTGRES_16 \
+-      --edition=enterprise \
+-      --tier=db-f1-micro \
+-      --region="$REGION" \
+-      --storage-size=10GB \
+-      --storage-type=SSD \
+-      --backup-start-time=03:00 \
+-      --project "$PROJECT_ID"
+-  fi
+-fi
+-
+-# ==============================================================================
+-# 4. Create Database (idempotent)
+-# ==============================================================================
+-if [ "$DRY_RUN" = "1" ]; then
+-  run_cmd gcloud sql databases describe "$DB_NAME" --instance="$SQL_INSTANCE" --project "$PROJECT_ID"
+-  run_cmd gcloud sql databases create "$DB_NAME" --instance="$SQL_INSTANCE" --project "$PROJECT_ID"
+-else
+-  if ! gcloud sql databases describe "$DB_NAME" --instance="$SQL_INSTANCE" --project "$PROJECT_ID" >/dev/null 2>&1; then
+-    run_cmd gcloud sql databases create "$DB_NAME" --instance="$SQL_INSTANCE" --project "$PROJECT_ID"
+-  fi
+-fi
+-
+-# ==============================================================================
+-# 5. Create Dedicated Runtime Service Account & IAM bindings (idempotent)
+-#    The app runs as this account with least privilege. Here it only gets
+-#    cloudsql.client (connect to the DB); access to individual secrets is
+-#    granted later, per secret, after they exist.
+-# ==============================================================================
+-if [ "$DRY_RUN" = "1" ]; then
+-  run_cmd gcloud iam service-accounts describe "$SA_EMAIL" --project "$PROJECT_ID"
+-  run_cmd gcloud iam service-accounts create "$SA_NAME" --display-name="TokTickIT Cloud Run Service Account" --project "$PROJECT_ID"
+-else
+-  if ! gcloud iam service-accounts describe "$SA_EMAIL" --project "$PROJECT_ID" >/dev/null 2>&1; then
+-    run_cmd gcloud iam service-accounts create "$SA_NAME" \
+-      --display-name="TokTickIT Cloud Run Service Account" \
+-      --project "$PROJECT_ID"
+-  fi
+-fi
+-
+-run_cmd gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+-  --member="serviceAccount:${SA_EMAIL}" \
+-  --role="roles/cloudsql.client" \
+-  --condition=None \
+-  --quiet
+-
+-# ==============================================================================
+-# 6. Create DB User & Store DATABASE_URL in Secret Manager (only if secret does not exist yet)
+-#    ⭐ IMPORTANT: the DB user's password and the password inside DATABASE_URL
+-#       must be the same value (checked by test_deploy_stub.sh). Never echo it.
+-#    CHANGE ME: the URL format below is PostgreSQL + Prisma specific
+-#       (host=/cloudsql/... unix socket, schema=public, connection_limit=3).
+-# ==============================================================================
+-if [ "$DRY_RUN" = "1" ]; then
+-  run_cmd gcloud secrets describe "$SECRET_DB_URL" --project "$PROJECT_ID"
+-  run_cmd gcloud sql users list --instance="$SQL_INSTANCE" --project "$PROJECT_ID" --format="value(name)"
+-  run_cmd gcloud sql users create "$DB_USER" --instance="$SQL_INSTANCE" --password="<GENERATED_HEX_PASSWORD>" --project "$PROJECT_ID"
+-  run_cmd gcloud secrets create "$SECRET_DB_URL" --replication-policy="automatic" --project "$PROJECT_ID"
+-  run_cmd gcloud secrets versions add "$SECRET_DB_URL" --data-file=- --project "$PROJECT_ID"
+-else
+-  if ! gcloud secrets describe "$SECRET_DB_URL" --project "$PROJECT_ID" >/dev/null 2>&1; then
+-    DB_PASS="$(openssl rand -hex 24)"
+-    if gcloud sql users list --instance="$SQL_INSTANCE" --project "$PROJECT_ID" --format="value(name)" | grep -qx "$DB_USER"; then
+-      run_cmd gcloud sql users set-password "$DB_USER" --instance="$SQL_INSTANCE" --password="$DB_PASS" --project "$PROJECT_ID"
+-    else
+-      run_cmd gcloud sql users create "$DB_USER" --instance="$SQL_INSTANCE" --password="$DB_PASS" --project "$PROJECT_ID"
+-    fi
+-    DB_URL_VALUE="postgresql://${DB_USER}:${DB_PASS}@localhost/${DB_NAME}?host=/cloudsql/${SQL_CONN_NAME}&schema=public&connection_limit=3"
+-    run_cmd gcloud secrets create "$SECRET_DB_URL" --replication-policy="automatic" --project "$PROJECT_ID"
+-    printf "%s" "$DB_URL_VALUE" | gcloud secrets versions add "$SECRET_DB_URL" --data-file=- --project "$PROJECT_ID"
+-  fi
+-fi
+-
+-# ==============================================================================
+-# 7. Create ADMIN_PASSWORD in Secret Manager (only if secret does not exist yet)
+-#    Read it later with: gcloud secrets versions access latest --secret=<name>
+-# ==============================================================================
+-if [ "$DRY_RUN" = "1" ]; then
+-  run_cmd gcloud secrets describe "$SECRET_ADMIN_PASS" --project "$PROJECT_ID"
+-  run_cmd gcloud secrets create "$SECRET_ADMIN_PASS" --replication-policy="automatic" --project "$PROJECT_ID"
+-  run_cmd gcloud secrets versions add "$SECRET_ADMIN_PASS" --data-file=- --project "$PROJECT_ID"
+-else
+-  if ! gcloud secrets describe "$SECRET_ADMIN_PASS" --project "$PROJECT_ID" >/dev/null 2>&1; then
+-    GENERATED_ADMIN_PASSWORD="$(openssl rand -base64 16 | tr -d '/+=' | cut -c1-14)Aa1!"
+-    run_cmd gcloud secrets create "$SECRET_ADMIN_PASS" --replication-policy="automatic" --project "$PROJECT_ID"
+-    printf "%s" "$GENERATED_ADMIN_PASSWORD" | gcloud secrets versions add "$SECRET_ADMIN_PASS" --data-file=- --project "$PROJECT_ID"
+-  fi
+-fi
+-
+-# ==============================================================================
+-# 8. Optional Demo Password in Secret Manager when --demo is passed
+-#    Only used to seed demo users (./deploy/deploy.sh --demo).
+-# ==============================================================================
++# Portal/TA pre-provisions infrastructure and public service IAM (Guide 5.3 steps 1–8, 5.4).
++# These names must exist. Never create or modify project-level IAM here.
+ JOB_SECRETS="DATABASE_URL=${SECRET_DB_URL}:latest,ADMIN_PASSWORD=${SECRET_ADMIN_PASS}:latest"
+ if [ "$SEED_DEMO_DATA" = "true" ]; then
+-  if [ "$DRY_RUN" = "1" ]; then
+-    run_cmd gcloud secrets describe "$SECRET_DEMO_PASS" --project "$PROJECT_ID"
+-    run_cmd gcloud secrets create "$SECRET_DEMO_PASS" --replication-policy="automatic" --project "$PROJECT_ID"
+-    run_cmd gcloud secrets versions add "$SECRET_DEMO_PASS" --data-file=- --project "$PROJECT_ID"
+-  else
+-    if ! gcloud secrets describe "$SECRET_DEMO_PASS" --project "$PROJECT_ID" >/dev/null 2>&1; then
+-      GENERATED_DEMO_PASSWORD="$(openssl rand -base64 16 | tr -d '/+=' | cut -c1-14)Dd1!"
+-      run_cmd gcloud secrets create "$SECRET_DEMO_PASS" --replication-policy="automatic" --project "$PROJECT_ID"
+-      printf "%s" "$GENERATED_DEMO_PASSWORD" | gcloud secrets versions add "$SECRET_DEMO_PASS" --data-file=- --project "$PROJECT_ID"
+-    fi
+-  fi
+   JOB_SECRETS="${JOB_SECRETS},DEMO_USER_PASSWORD=${SECRET_DEMO_PASS}:latest"
+ fi
+-
+-# ------------------------------------------------------------------------------
+-# Secret access (per secret, NOT project-wide)
+-# ⭐ IMPORTANT: test_deploy_stub.sh fails if a project-wide secretAccessor
+-#    binding is added — keep access limited to this app's own secrets.
+-# ------------------------------------------------------------------------------
+-# Grant access only to this app's secrets, after they exist.
+-RUNTIME_SECRETS=("$SECRET_DB_URL" "$SECRET_ADMIN_PASS")
+-if [ "$SEED_DEMO_DATA" = "true" ]; then
+-  RUNTIME_SECRETS+=("$SECRET_DEMO_PASS")
+-fi
+-for secret in "${RUNTIME_SECRETS[@]}"; do
+-  run_cmd gcloud secrets add-iam-policy-binding "$secret" \
+-    --member="serviceAccount:${SA_EMAIL}" \
+-    --role="roles/secretmanager.secretAccessor" \
+-    --project "$PROJECT_ID" --quiet
+-done
+-
+-# ==============================================================================
++if [ "$DRY_RUN" != "1" ]; then
++  gcloud run services describe "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" >/dev/null
++  gcloud run jobs describe "$MIGRATE_JOB_NAME" --project "$PROJECT_ID" --region "$REGION" >/dev/null
++fi
+ # 9. Build & Push Unified Container Image via Cloud Build
+ #    Builds the root Dockerfile (run this script from the repo root).
+ #    Tag `latest` is only for this first manual setup; deploy.yml uses commit SHAs.
+ # ==============================================================================
+-run_cmd gcloud builds submit \
+-  --tag "$IMAGE_URI" \
+-  --project "$PROJECT_ID"
++run_cmd gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
++run_cmd docker build --platform linux/amd64 --tag "$IMAGE_URI" .
++run_cmd docker push "$IMAGE_URI"
++if [ "$DRY_RUN" != "1" ]; then
++  IMAGE_URI="$(gcloud artifacts docker images describe "$IMAGE_URI" --project "$PROJECT_ID" --format='value(image_summary.fully_qualified_digest)')"
++  [[ "$IMAGE_URI" == "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}@sha256:"* ]] || { echo 'Missing image digest' >&2; exit 1; }
++fi
+ 
+ # ==============================================================================
+ # 10. Create/Update & Execute Cloud Run Job for Migration + Non-destructive Seed
+@@ -314,7 +158,7 @@
+ #        Prisma/npm specific — use your stack's migrate/seed command.
+ #     deploy.yml / release.sh later re-run this same job (name: toktickit-migrate).
+ # ==============================================================================
+-run_cmd gcloud run jobs deploy "$MIGRATE_JOB_NAME" \
++run_cmd gcloud run jobs update "$MIGRATE_JOB_NAME" \
+   --image "$IMAGE_URI" \
+   --region "$REGION" \
+   --service-account "$SA_EMAIL" \
+@@ -343,22 +187,21 @@
+ #                --memory / --cpu / --max-instances for your app.
+ #     ⚠️ --allow-unauthenticated makes the service public (needed for the demo).
+ # ==============================================================================
+-run_cmd gcloud run deploy "$SERVICE_NAME" \
++run_cmd gcloud run services update "$SERVICE_NAME" \
+   --image "$IMAGE_URI" \
+   --region "$REGION" \
+-  --platform managed \
+-  --allow-unauthenticated \
+   --service-account "$SA_EMAIL" \
+   --add-cloudsql-instances "$SQL_CONN_NAME" \
+   --set-secrets "DATABASE_URL=${SECRET_DB_URL}:latest" \
+   --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok,SESSION_SECRET=unimerch-super-secret-session-key-change-in-production" \
+   --min-instances 0 \
+-  --max-instances 3 \
++  --max-instances 1 \
+   --memory 512Mi \
+   --cpu 1 \
+   --port 3000 \
+   --project "$PROJECT_ID"
+ 
++run_cmd gcloud run services update-traffic "$SERVICE_NAME" --to-latest --project "$PROJECT_ID" --region "$REGION" --quiet
+ if [ "$DRY_RUN" = "1" ]; then
+   SERVICE_URL="https://${SERVICE_NAME}-<hash>-as.a.run.app"
+ else
+--- a/deploy/teardown.sh
++++ b/deploy/teardown.sh
+@@ -1,104 +1,4 @@
+ #!/usr/bin/env bash
+ set -euo pipefail
+-
+-# ==============================================================================
+-# TokTickIT — Google Cloud Run & Cloud SQL Teardown Script
+-# ==============================================================================
+-# Usage:
+-#   ./deploy/teardown.sh
+-#
+-# Environment Variables (Optional):
+-#   PROJECT_ID   GCP Project ID (defaults to active gcloud config project)
+-#   REGION       GCP Region (default: asia-southeast1)
+-#   DRY_RUN      Set DRY_RUN=1 to print all gcloud commands without executing
+-#
+-# WHAT THIS SCRIPT DOES
+-#   Deletes everything deploy/deploy.sh created (Cloud Run service + job, Cloud
+-#   SQL, Artifact Registry, secrets, service account) to stop billing.
+-#
+-# ⚠️ DESTRUCTIVE: all Cloud SQL data is permanently lost. You must type the
+-#    project ID to confirm. Preview first with:  DRY_RUN=1 ./deploy/teardown.sh
+-#
+-# REFERENCES
+-#   - gcloud run services delete  : https://cloud.google.com/sdk/gcloud/reference/run/services/delete
+-#   - gcloud sql instances delete : https://cloud.google.com/sdk/gcloud/reference/sql/instances/delete
+-#   - gcloud secrets delete       : https://cloud.google.com/sdk/gcloud/reference/secrets/delete
+-#
+-# ⭐ CHANGE ME: the resource names below MUST match deploy/deploy.sh. If you
+-#    rename anything there (other stack / own naming), rename it here too.
+-# ==============================================================================
+-
+-DRY_RUN="${DRY_RUN:-0}"
+-# CHANGE ME: keep identical to REGION in deploy/deploy.sh.
+-REGION="${REGION:-asia-southeast1}"
+-
+-run_cmd() {
+-  if [ "$DRY_RUN" = "1" ]; then
+-    echo "[DRY_RUN] $*"
+-  else
+-    echo "+ $*"
+-    "$@"
+-  fi
+-}
+-
+-if [ "$DRY_RUN" = "1" ]; then
+-  PROJECT_ID="${PROJECT_ID:-example-gcp-project}"
+-else
+-  PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || true)}"
+-  if [ -z "$PROJECT_ID" ]; then
+-    echo "Error: PROJECT_ID is not set and no active gcloud project was found." >&2
+-    exit 1
+-  fi
+-fi
+-
+-# ------------------------------------------------------------------------------
+-# Resource names
+-# ------------------------------------------------------------------------------
+-REPO_NAME="s3c35c9bd"
+-SQL_INSTANCE="s3c35c9bd-pg"
+-SERVICE_NAME="s3c35c9bd"
+-MIGRATE_JOB_NAME="s3c35c9bd-migrate"
+-SA_NAME="s3c35c9bd-runner"
+-SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+-
+-SECRET_DB_URL="s3c35c9bd-database-url"
+-SECRET_ADMIN_PASS="s3c35c9bd-admin-password"
+-SECRET_DEMO_PASS="s3c35c9bd-demo-password"
+-
+-echo "=================================================================="
+-echo "WARNING: This will permanently delete UniMerch resources in:"
+-echo "  Project : ${PROJECT_ID}"
+-echo "  Region  : ${REGION}"
+-echo "Resources to be deleted:"
+-echo "  - Cloud Run Service : ${SERVICE_NAME}"
+-echo "  - Cloud Run Job     : ${MIGRATE_JOB_NAME}"
+-echo "  - Cloud SQL Instance: ${SQL_INSTANCE} (ALL DATABASE DATA WILL BE LOST)"
+-echo "  - Artifact Registry : ${REPO_NAME}"
+-echo "  - Secrets           : ${SECRET_DB_URL}, ${SECRET_ADMIN_PASS}, ${SECRET_DEMO_PASS}"
+-echo "  - Service Account   : ${SA_EMAIL}"
+-echo "=================================================================="
+-
+-# ------------------------------------------------------------------------------
+-# Safety confirmation (skipped only in DRY_RUN)
+-# ------------------------------------------------------------------------------
+-if [ "$DRY_RUN" != "1" ]; then
+-  read -r -p "Type the project ID (${PROJECT_ID}) to confirm deletion: " CONFIRM_PROJECT
+-  if [ "$CONFIRM_PROJECT" != "$PROJECT_ID" ]; then
+-    echo "Aborted: confirmation did not match ${PROJECT_ID}."
+-    exit 1
+-  fi
+-fi
+-
+-# ------------------------------------------------------------------------------
+-# Delete resources (each `|| true` so one missing resource does not stop the rest)
+-# ------------------------------------------------------------------------------
+-run_cmd gcloud run services delete "$SERVICE_NAME" --region "$REGION" --project "$PROJECT_ID" --quiet || true
+-run_cmd gcloud run jobs delete "$MIGRATE_JOB_NAME" --region "$REGION" --project "$PROJECT_ID" --quiet || true
+-run_cmd gcloud sql instances delete "$SQL_INSTANCE" --project "$PROJECT_ID" --quiet || true
+-run_cmd gcloud artifacts repositories delete "$REPO_NAME" --location "$REGION" --project "$PROJECT_ID" --quiet || true
+-run_cmd gcloud secrets delete "$SECRET_DB_URL" --project "$PROJECT_ID" --quiet || true
+-run_cmd gcloud secrets delete "$SECRET_ADMIN_PASS" --project "$PROJECT_ID" --quiet || true
+-run_cmd gcloud secrets delete "$SECRET_DEMO_PASS" --project "$PROJECT_ID" --quiet || true
+-run_cmd gcloud iam service-accounts delete "$SA_EMAIL" --project "$PROJECT_ID" --quiet || true
+-
+-echo "Teardown completed."
++echo 'Shared course project: request pause/cleanup from TA; do not run the original teardown.' >&2
++exit 1
+--- a/deploy/tests/test_deploy_stub.sh
++++ b/deploy/tests/test_deploy_stub.sh
+@@ -1,168 +1,19 @@
+ #!/usr/bin/env bash
+-# Offline regression checks: every gcloud and openssl call is a local stub.
+-# ==============================================================================
+-# WHAT THIS TEST DOES (no real GCP calls, no cost)
+-#   Puts fake `gcloud` / `openssl` first on PATH and runs deploy/deploy.sh in
+-#   these scenarios, asserting on the recorded commands:
+-#     first_run : nothing exists      -> everything is created
+-#     rerun     : everything exists   -> nothing replaced (credentials kept)
+-#     partial   : DB secret missing   -> DB user password reset + secret created
+-#     job-fail  : migration fails     -> script exits 1, service NOT deployed
+-#     demo      : --demo flag         -> demo secret is created and granted
+-#   It also checks: `--edition=enterprise`, no project-wide secretAccessor role,
+-#   DB password == password inside DATABASE_URL, and that no password/secret
+-#   value leaks into the output. Finally DRY_RUN=1 must make zero gcloud calls.
+-#
+-# HOW TO RUN (repo root, needs bash):  bash deploy/tests/test_deploy_stub.sh
+-#   Prints `PASS: <scenario>` per scenario; any `FAIL ...` exits non-zero.
+-#   CI runs it too (.github/workflows/ci-docker.yml).
+-#
+-# ⭐ CHANGE ME: if you rename resources in deploy/deploy.sh (e.g. the secret
+-#    names toktickit-database-url / -admin-password / -demo-password, the DB
+-#    user `toktickit`), update the matching strings below.
+-# ==============================================================================
++# Shared-project adaptation: original CI still invokes this existing test path.
+ set -euo pipefail
+-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+-DEPLOY_SCRIPT="${SCRIPT_DIR}/../deploy.sh"
+-export TEST_STATE_DIR
+-TEST_STATE_DIR="$(mktemp -d)"
+-trap 'rm -rf "$TEST_STATE_DIR"' EXIT
+-mkdir -p "$TEST_STATE_DIR/bin"
+-
+-# --- Fake `openssl` (deterministic "random" values) ---------------------------
+-cat > "$TEST_STATE_DIR/bin/openssl" <<'STUB'
+-#!/usr/bin/env bash
+-if [ "$2" = "-hex" ]; then
+-  printf '%s\n' '0123456789abcdef0123456789abcdef0123456789abcdef'
+-else
+-  printf '%s\n' 'TESTONLYGENERATEDPASSWORD'
++ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
++tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
++mkdir -p "$tmp/bin"
++for executable in gcloud docker; do
++  printf '%s\n' '#!/usr/bin/env bash' 'echo "Unexpected cloud/build call" >&2; exit 99' > "$tmp/bin/$executable"
++  chmod +x "$tmp/bin/$executable"
++done
++PATH="$tmp/bin:$PATH" DRY_RUN=1 bash "$ROOT/deploy/deploy.sh" > "$tmp/plan"
++grep -q '\[DRY_RUN\]' "$tmp/plan"
++if grep -E '^\[DRY_RUN\].*(services enable|sql instances create|add-iam-policy-binding|secrets create)' "$tmp/plan"; then
++  echo 'Forbidden infrastructure command in plan' >&2; exit 1
+ fi
+-STUB
+-
+-# --- Fake `gcloud`: logs each call (password redacted), answers per $STUB_MODE
+-cat > "$TEST_STATE_DIR/bin/gcloud" <<'STUB'
+-#!/usr/bin/env bash
+-set -euo pipefail
+-redacted=()
+-for arg in "$@"; do
+-  case "$arg" in
+-    --password=*)
+-      printf '%s' "${arg#--password=}" > "$TEST_STATE_DIR/sql-pass"
+-      redacted+=("--password=<REDACTED>") ;;
+-    *) redacted+=("$arg") ;;
+-  esac
+-done
+-printf '%s\n' "${redacted[*]}" >> "$GCLOUD_LOG"
+-if [ "${1:-} ${2:-}" = 'config get-value' ]; then
+-  echo stub-gcp-project
+-  exit 0
+-fi
+-if [ "${1:-} ${2:-} ${3:-}" = 'run services describe' ]; then
+-  echo https://s3c35c9bd-stub.example.invalid
+-  exit 0
+-fi
+-if [ "${1:-} ${2:-} ${3:-}" = 'run jobs execute' ]; then
+-  [ "$STUB_MODE" != job-fail ]
+-  exit $?
+-fi
+-if [ "${1:-} ${2:-} ${3:-}" = 'secrets versions add' ]; then
+-  cat > "$TEST_STATE_DIR/payload-${4}"
+-  exit 0
+-fi
+-if [ "${1:-} ${2:-} ${3:-}" = 'sql users list' ]; then
+-  if [ "$STUB_MODE" = first_run ]; then
+-    echo postgres
+-  else
+-    printf 'postgres\ns3c35c9bd\n'
+-  fi
+-  exit 0
+-fi
+-for word in "$@"; do
+-  if [ "$word" = describe ]; then
+-    case "$STUB_MODE" in
+-      first_run) exit 1 ;;
+-      partial)
+-        if [ "${1:-} ${3:-}" = 'secrets s3c35c9bd-database-url' ]; then
+-          exit 1
+-        fi ;;
+-    esac
+-  fi
+-done
+-STUB
+-chmod +x "$TEST_STATE_DIR/bin/openssl" "$TEST_STATE_DIR/bin/gcloud"
+-export PATH="$TEST_STATE_DIR/bin:$PATH"
+-export PROJECT_ID=stub-gcp-project
+-export REGION=asia-southeast1
+-export DRY_RUN=0
+-
+-# --- Run every scenario and assert on what deploy.sh did ------------------------
+-for MODE in first_run rerun partial job-fail demo; do
+-  export STUB_MODE="$MODE"
+-  [ "$MODE" != demo ] || export STUB_MODE=first_run
+-  export GCLOUD_LOG="$TEST_STATE_DIR/gcloud-$MODE.log"
+-  rm -f "$TEST_STATE_DIR/sql-pass" "$TEST_STATE_DIR"/payload-*
+-  args=()
+-  if [ "$MODE" = demo ]; then args+=(--demo); fi
+-  result=0
+-  bash "$DEPLOY_SCRIPT" "${args[@]}" > "$TEST_STATE_DIR/output" 2>&1 || result=$?
+-  expected=0
+-  if [ "$MODE" = job-fail ]; then expected=1; fi
+-  if [ "$result" -ne "$expected" ]; then
+-    echo "FAIL $MODE: unexpected exit $result (wanted $expected)"
+-    exit 1
+-  fi
+-  if [ "$MODE" = job-fail ]; then
+-    if grep -q '^run deploy ' "$GCLOUD_LOG"; then
+-      echo 'FAIL: service deployed after migration failure'; exit 1
+-    fi
+-  else
+-    grep -q '^run deploy ' "$GCLOUD_LOG"
+-  fi
+-  if grep -q '^projects add-iam-policy-binding .*roles/secretmanager.secretAccessor' "$GCLOUD_LOG"; then
+-    echo 'FAIL: runtime has project-wide secret access'; exit 1
+-  fi
+-  for secret in s3c35c9bd-database-url s3c35c9bd-admin-password; do
+-    grep -q "^secrets add-iam-policy-binding $secret .*roles/secretmanager.secretAccessor" "$GCLOUD_LOG"
+-  done
+-  if [ "$MODE" = demo ]; then
+-    grep -q '^secrets add-iam-policy-binding s3c35c9bd-demo-password ' "$GCLOUD_LOG"
+-  elif grep -q '^secrets add-iam-policy-binding s3c35c9bd-demo-password ' "$GCLOUD_LOG"; then
+-    echo 'FAIL: granted optional demo secret in non-demo mode'; exit 1
+-  fi
+-  case "$MODE" in
+-    first_run)
+-      grep -q -- '--edition=enterprise' "$GCLOUD_LOG"
+-      grep -q '^sql users create ' "$GCLOUD_LOG" ;;
+-    partial) grep -q '^sql users set-password ' "$GCLOUD_LOG" ;;
+-    rerun)
+-      if grep -Eq '^(secrets create|sql users (create|set-password)) ' "$GCLOUD_LOG"; then
+-        echo 'FAIL: rerun replaced existing credentials'; exit 1
+-      fi ;;
+-  esac
+-  if [ -f "$TEST_STATE_DIR/sql-pass" ]; then
+-    db_pass="$(cat "$TEST_STATE_DIR/sql-pass")"
+-    db_url="$(cat "$TEST_STATE_DIR/payload-s3c35c9bd-database-url")"
+-    case "$db_url" in
+-      "postgresql://s3c35c9bd:${db_pass}@"*) ;;
+-      *) echo 'FAIL: DB password differs from secret'; exit 1 ;;
+-    esac
+-    if grep -Fq "$db_pass" "$TEST_STATE_DIR/output"; then
+-      echo 'FAIL: DB password leaked to output'; exit 1
+-    fi
+-  fi
+-  for secret_file in "$TEST_STATE_DIR"/payload-*; do
+-    [ -f "$secret_file" ] || continue
+-    secret_value="$(cat "$secret_file")"
+-    if [ -n "$secret_value" ] && grep -Fq "$secret_value" "$TEST_STATE_DIR/output"; then
+-      echo 'FAIL: secret payload leaked to output'; exit 1
+-    fi
+-  done
+-  echo "PASS: $MODE (exit, migration gate, credential handling, secret redaction)"
+-done
+-# --- Dry run must not call gcloud at all ------------------------------------------
+-export GCLOUD_LOG="$TEST_STATE_DIR/dry-run-calls"
+-DRY_RUN=1 bash "$DEPLOY_SCRIPT" --demo > "$TEST_STATE_DIR/dry-run-output"
+-if [ -f "$GCLOUD_LOG" ]; then
+-  echo 'FAIL: dry run called gcloud'; exit 1
+-fi
+-echo 'PASS: dry run makes no gcloud calls'
++grep -q 'docker build' "$tmp/plan"
++grep -q 'run jobs update' "$tmp/plan"
++grep -q 'run services update' "$tmp/plan"
++echo 'Shared-project deploy dry-run: PASS (no cloud or Docker execution)'
