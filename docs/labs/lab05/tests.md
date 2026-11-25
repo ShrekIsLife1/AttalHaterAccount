@@ -11,7 +11,7 @@
 | **R-03, R-04, C-04** | #20 | TEST-L5-20..25 | Live / Smoke | First deployment on Cloud Run, live domain customer order journey, failure rejections | ✅ Done |
 | **R-06, R-09, C-02** | #21 | TEST-L5-26..31 | Merge Gate | Workload Identity Federation, branch protection ruleset, failing PR blocked | ✅ Done |
 | **R-07, R-08, C-06** | #22 | TEST-L5-32..42 | Release Pipeline | `deploy.yml`, automated smoke test, release by commit SHA digest | ✅ Done |
-| **R-04, C-05** | #23 | TEST-L5-43..47 | Persistence / Rollback | Data persistence across service restart and redeploy, additive migrations, rollback | 🔲 Planned |
+| **R-04, C-05** | #23 | TEST-L5-43..47 | Persistence / Rollback | Data persistence across service restart and redeploy, additive migrations, rollback | ✅ Done |
 | **Cost Control** | #24 | TEST-L5-48..51 | Operations | Pause/resume Cloud SQL procedure, Cloud Run min=0 instances, spend tracking | ✅ Done |
 | **R-08, R-11, DoD** | #25 | TEST-L5-52..58 | Documentation | Final release verification, `deployment.md`, secret scan, and LEB2 deliverable PDF | 🔲 Planned |
 
@@ -108,3 +108,15 @@
 | **TEST-L5-41** | Traceability | Commit digest verification (R-08): `GET /api/version` on the live Cloud Run URL returns `{ "commit": "<GIT_SHA>" }` matching the release commit | `curl -s https://s3c35c9bd-4d7hbszvwq-as.a.run.app/api/version` | Pass |
 | **TEST-L5-42** | Rollback | Zero-migration fast rollback: `workflow_dispatch` with `image_tag` skips tests, build, and migration, pointing service directly to prior digest | `test_release_stub.sh` ("rollback reuses image without touching migration") and workflow condition check | Pass |
 
+
+---
+
+## Detailed Test Specifications: Issue #23 (Cloud Persistence & Rollback Verification)
+
+| TEST ID | Level | Test Description | Verification Method / Evidence | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-43** | Persistence | Data persists across Cloud Run service restart: customer orders created in Issue #20 are still retrievable via `GET /api/orders/my-orders` after a forced Cloud Run instance restart (scale-to-zero cycle triggered by idle timeout or manual `gcloud run services update --min-instances=0`) | Force idle timeout, then `curl -s https://s3c35c9bd-4d7hbszvwq-as.a.run.app/api/orders/my-orders` with valid session returns same orders | Pass |
+| **TEST-L5-44** | Persistence | Data persists across a full redeployment: orders and user accounts created before the new release remain intact after `deploy/release.sh` runs (new image, migration job, traffic cutover) | Re-deploy via `workflow_dispatch` on `main`; verify existing order IDs unchanged via API after deployment completes | Pass |
+| **TEST-L5-45** | Persistence | Prisma migrations are strictly additive: `prisma/migrations/` contains only forward migrations with no destructive `DROP TABLE` or `DROP COLUMN` statements | `grep -rn "DROP TABLE\|DROP COLUMN" prisma/migrations/` returns zero results | Pass |
+| **TEST-L5-46** | Persistence | Cloud SQL instance and data survive a pause/resume cycle (issue #24): records present before pause are still present after resume without any restore procedure | Execute pause (`--activation-policy=NEVER`) then resume (`--activation-policy=ALWAYS`); `GET /api/orders/my-orders` returns same orders | Pass |
+| **TEST-L5-47** | Rollback | Fast rollback via `workflow_dispatch image_tag` restores a prior Cloud Run revision without touching Cloud SQL: prior orders still accessible after rollback, and `GET /api/version` returns the rolled-back commit SHA | Trigger `workflow_dispatch` with the previous commit SHA as `image_tag`; verify `GET /api/version` and order data intact | Pass |

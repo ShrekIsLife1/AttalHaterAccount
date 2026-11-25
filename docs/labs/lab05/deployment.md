@@ -405,3 +405,57 @@ PROJECT_ID="cpe-se-course-2026" REGION="asia-southeast1" bash deploy/teardown.sh
 | **TEST-L5-50** | Graceful 503 handling while paused | When DB is paused, `GET /api/ready` returns 503 `{"status":"not_ready","db":"disconnected"}`; zero crashes, zero secret leaks | Pass |
 | **TEST-L5-51** | Idle scale-to-zero & quota audit | Cloud Run `min-instances=0`, `max-instances=3`, `memory=512Mi`; GCP Budget alert configured with 50%, 90%, 100% notification thresholds | Pass |
 
+
+---
+
+## 8. Cloud Persistence & Rollback Verification (Issue #23 / Check C-05)
+
+### Why Persistence Matters
+
+Cloud Run is a stateless serverless platform: the container can be stopped, restarted, or replaced at any moment. All user data must survive these events because it lives exclusively in Cloud SQL — not in the container's filesystem. Issue #23 verifies that this promise holds across every lifecycle event.
+
+### Persistence Guarantees
+
+**1. Stateless Container + Persistent Database**
+- The Cloud Run container carries zero user state; every restart begins from a clean image.
+- All mutable data (users, orders, sessions) is stored in Cloud SQL PostgreSQL (`s3c35c9bd-pg`).
+- Session tokens are stored in the `Session` table (not in-memory), so active sessions survive container replacement.
+
+**2. Additive-Only Prisma Migrations**
+- Every migration in `prisma/migrations/` is a forward-only DDL change.
+- Verified: `grep -rn "DROP TABLE\|DROP COLUMN" prisma/migrations/` returns zero results.
+- The migration job (`s3c35c9bd-migrate`) runs `prisma migrate deploy` — idempotent and safe to replay.
+
+**3. Scale-to-Zero Cycle**
+- Cloud Run `min-instances=0` means the container shuts down after ~15 minutes of inactivity.
+- On the next request, a new instance starts and immediately reads from Cloud SQL — user data intact.
+
+**4. Pause/Resume Persistence (see Section 7 / Issue #24)**
+- Cloud SQL was paused (`--activation-policy=NEVER`) and resumed (`--activation-policy=ALWAYS`).
+- All orders placed before the pause remained fully intact after resume — no data loss, no restore needed.
+
+### Redeployment Persistence
+
+When `deploy/release.sh` runs a new release:
+1. `s3c35c9bd-migrate` executes `prisma migrate deploy` — only applies new migrations, existing data untouched.
+2. Cloud Run traffic is atomically cut over to the new digest via `update-traffic --to-latest`.
+3. Old revision is drained gracefully (SIGTERM → 10 s drain window).
+4. Existing orders, users, and sessions remain accessible throughout.
+
+### Fast Rollback Without Data Loss
+
+Triggered by `workflow_dispatch` with `image_tag` = previous commit SHA:
+- Tests, build, and migration steps are skipped (image already exists in Artifact Registry).
+- Cloud Run service is pointed directly to the prior digest.
+- **Cloud SQL is not touched** — no downgrade migration, no data loss.
+- After rollback, `GET /api/version` reflects the rolled-back SHA; `GET /api/orders/my-orders` returns unchanged orders.
+
+### Check C-05 Verification Matrix
+
+| Test ID | Level | Verification Criterion | Evidence |
+|---|---|---|---|
+| **TEST-L5-43** | Persistence | Data survives Cloud Run scale-to-zero/restart | Orders created in #20 retrieved after idle restart; `GET /api/orders/my-orders` returns same records |
+| **TEST-L5-44** | Persistence | Data survives a full redeployment via `release.sh` | Orders retrieved after `workflow_dispatch` redeployment; order IDs unchanged |
+| **TEST-L5-45** | Persistence | Prisma migrations are strictly additive (no DROP) | `grep -rn "DROP TABLE\|DROP COLUMN" prisma/migrations/` returns zero matches |
+| **TEST-L5-46** | Persistence | Data survives Cloud SQL pause/resume cycle | Orders intact after `--activation-policy=ALWAYS` resume (see Issue #24 evidence) |
+| **TEST-L5-47** | Rollback | Fast rollback via `image_tag` leaves Cloud SQL unchanged | `GET /api/version` returns prior SHA; orders accessible post-rollback |
