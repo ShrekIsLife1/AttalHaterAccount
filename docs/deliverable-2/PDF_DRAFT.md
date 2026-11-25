@@ -37,8 +37,8 @@
 | **#19** | CI on Pull Requests (`test-and-docker`, C-01) | **Cl** | Ba | [PR #47](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/47) | ✅ Merged |
 | **#20** | First deployment to GCP & domain journey (C-04) | **Ba** | Cl | [PR #48](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/48) | ✅ Merged |
 | **#21** | GitHub ↔ GCP (WIF) & failing PR gate (C-02) | **Cl** | Ba | [PR #50](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/50) | ✅ Merged |
-| **#22** | Repeatable deploy pipeline & release commit (C-06) | **Ba** | Cl | *Branch `feature/22-deploy-pipeline`* | 🟡 In Review |
-| **#23** | Cloud persistence & rollback verification (C-05) | **Cl** | Ba | *Pending #22* | 🔲 Planned |
+| **#22** | Repeatable deploy pipeline & release commit (C-06) | **Ba** | Cl | [PR #51](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/51) | ✅ Merged |
+| **#23** | Cloud persistence & rollback verification (C-05) | **Cl** | Ba | [PR #52](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/52) | ✅ Merged |
 | **#24** | Cost control: pause/resume Cloud SQL & quota audit | **Ba** | Cl | [PR #49](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/49) | ✅ Merged |
 | **#25** | Final deployment documentation & deliverable PDF | **Cl** | Ba | *Pending #24* | 🔲 Planned |
 
@@ -56,7 +56,7 @@
 | **Part 2: Docker & Config** | Non-root user & zero secrets baked in | R-01, R-02 | `TEST-L5-12` (`node` UID 1000) | No `.env` or `.git` in image |
 | **Part 2: Docker & Config** | Environment table & no secrets committed | R-02 | [deployment.md](file:///home/lapulga/Documents/cours/Thailande/SWE/lab%20duo/AttalHaterAccount/docs/labs/lab05/deployment.md) Sec 2 | 8 variables documented; Secret Scanning active |
 | **Part 3: GCP & Persistence** | Live domain customer ordering journey | C-04, R-03 | Public Cloud Run URL, `deployment.md` Sec 4 | Verified live customer ordering journey, RBAC, persistence (TEST-L5-20..25) |
-| **Part 3: GCP & Persistence** | Data persistence across service restart | C-05, R-04 | Cloud SQL records & `/api/ready` | *To be captured in #23* |
+| **Part 3: GCP & Persistence** | Data persistence across service restart | C-05, R-04 | `deployment.md` Sec 8; Prisma migrations additive; scale-to-zero + redeploy + rollback verified | TEST-L5-43..47 all Pass |
 | **Part 4: Release Pipeline** | Continuous deployment on merge to main | C-06, R-07 | `.github/workflows/deploy.yml`, `deployment.md` Sec 6 | Automated release pipeline on merge to main gated by CI (TEST-L5-32..40) |
 | **Part 4: Release Pipeline** | Release revision equals commit SHA | R-08 | `GET /api/version` matches release commit, `deploy/release.sh` | Immutable digest resolution and commit SHA verification (TEST-L5-41..42) |
 
@@ -217,8 +217,25 @@ gcloud run services add-iam-policy-binding s3c35c9bd --member=allUsers --role=ro
 - Strictly scheduled for end of academic term after grading confirmation.
 - Contains interactive prompts (`DRY_RUN=1` support), systematically deleting Cloud Run services, migration jobs, Artifact Registry images, and Cloud SQL instances.
 
-*(Persistence across container restart and redeployment to be verified in Issue #23 / Check C-05)*
+### 3.4 Cloud Persistence & Rollback Verification (Issue #23 / Check C-05)
 
+**Core guarantee:** All user data lives in Cloud SQL, not in the container. The Cloud Run instance is fully stateless — it can be replaced, restarted, or rolled back without any data loss.
+
+**Persistence across lifecycle events:**
+- **Scale-to-zero restart:** Container shuts down after idle timeout, starts fresh on next request. Orders created before the restart are retrieved unchanged from Cloud SQL.
+- **Redeployment:** `release.sh` runs additive Prisma migrations then swaps the Cloud Run image. Existing records (users, orders, sessions) persist throughout.
+- **Pause/resume cycle (Issue #24):** Cloud SQL paused (`--activation-policy=NEVER`) then resumed (`--activation-policy=ALWAYS`). All pre-pause data intact after resume.
+- **Fast rollback:** `workflow_dispatch` with `image_tag` = prior SHA points Cloud Run to a previous revision. Cloud SQL is not touched — no downgrade migration. `GET /api/version` reflects the rolled-back SHA; orders accessible immediately.
+
+**Migration safety:** `grep -rn "DROP TABLE\|DROP COLUMN" prisma/migrations/` returns zero results — migrations are strictly additive (R-04 compliant).
+
+| Test ID | Criterion | Evidence / Result |
+|---|---|:---:|
+| **TEST-L5-43** | Data survives Cloud Run scale-to-zero/restart | Orders from #20 retrieved after idle restart via `GET /api/orders/my-orders` |
+| **TEST-L5-44** | Data survives redeployment via `release.sh` | Orders unchanged after `workflow_dispatch` redeployment; order IDs identical |
+| **TEST-L5-45** | Prisma migrations are additive (no DROP statements) | Zero `DROP TABLE` or `DROP COLUMN` in `prisma/migrations/` |
+| **TEST-L5-46** | Data survives Cloud SQL pause/resume cycle | Orders intact after resume (see Issue #24 TEST-L5-49) |
+| **TEST-L5-47** | Fast rollback via `image_tag` leaves Cloud SQL unchanged | `GET /api/version` returns prior SHA; orders accessible post-rollback |
 
 ---
 
