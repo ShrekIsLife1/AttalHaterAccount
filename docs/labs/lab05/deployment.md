@@ -266,3 +266,67 @@ PROJECT_ID="cpe-se-course-2026" REGION="asia-southeast1" bash deploy/teardown.sh
 | **TEST-L5-50** | Graceful 503 handling while paused | When DB is paused, `GET /api/ready` returns 503 `{"status":"not_ready","db":"disconnected"}`; zero crashes, zero secret leaks | Pass |
 | **TEST-L5-51** | Idle scale-to-zero & quota audit | Cloud Run `min-instances=0`, `max-instances=3`, `memory=512Mi`; GCP Budget alert configured with 50%, 90%, 100% notification thresholds | Pass |
 
+## 5. GitHub ↔ GCP Integration: Workload Identity Federation & Merge Gate (Issue #21)
+
+### Workload Identity Federation (R-06, R-09)
+
+GitHub Actions authenticates to Google Cloud **without any long-lived service-account JSON key**. Instead, the runner exchanges a short-lived GitHub OIDC token for a GCP access token using Workload Identity Federation (WIF).
+
+**How it works (keyless flow):**
+1. GitHub Actions generates a short-lived OIDC token signed by `token.actions.githubusercontent.com`.
+2. The `google-github-actions/auth` action sends that token to the GCP STS API.
+3. GCP validates the token against the WIF pool binding (repo/branch conditions) and returns a scoped access token.
+4. The runner uses that token for all subsequent `gcloud`/Docker registry operations — the token expires after 1 hour with no rotation needed.
+
+**Repository / Environment Variables (not secrets):**
+
+| Variable | Value (GitHub `Settings → Environments → demo`) |
+|---|---|
+| `WIF_PROVIDER` | `projects/<project-number>/locations/global/workloadIdentityPools/s3c35c9bd-pool/providers/s3c35c9bd-provider` |
+| `WIF_SERVICE_ACCOUNT` | `s3c35c9bd-runner@cpe-se-course-2026.iam.gserviceaccount.com` |
+| `GCP_PROJECT_ID` | `cpe-se-course-2026` |
+| `GCP_REGION` | `asia-southeast1` |
+
+No `credentials_json` secret is present in the repository. Zero long-lived credentials are stored in GitHub.
+
+**Relevant `deploy.yml` step:**
+```yaml
+- name: Authenticate to Google Cloud without a key
+  uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+  with:
+    workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+    service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+```
+
+### Branch Protection Ruleset (R-09, C-02)
+
+Both `lab5-staging` and `main` branches require the `test-and-docker` status check to pass before any pull request can be merged.
+
+**Configuration (`Settings → Branches`):**
+- **Protected branches:** `lab5-staging`, `main`
+- **Required status check:** `test-and-docker` (job id defined in `.github/workflows/ci-docker.yml`)
+- **Effect:** GitHub disables the "Merge pull request" button for any PR where `test-and-docker` has not completed with status `success`.
+
+### Check C-02: Failing PR Blocked by Merge Gate
+
+To demonstrate the merge gate in action, a temporary branch `test/intentionally-failing-ci-gate` was created from `lab5-staging` with a deliberately failing assertion:
+
+```typescript
+// server/tests/lab5/health.api.test.ts — intentional failure for C-02 demo
+it("INTENTIONAL FAILURE — merge gate demo", () => {
+  expect(true).toBe(false); // This always fails
+});
+```
+
+This branch was opened as a PR into `lab5-staging`. The `test-and-docker` job failed, and GitHub blocked the merge with the message **"Required status checks must pass before merging"**. The merge button remained disabled until the failing branch was closed without merging.
+
+### Check C-02 Verification Matrix
+
+| Test ID | Level | Verification Criterion | Evidence |
+|---|---|---|---|
+| **TEST-L5-26** | WIF | No JSON key stored in GitHub; auth uses OIDC token exchange | `deploy.yml` uses `google-github-actions/auth` with `WIF_PROVIDER`/`WIF_SERVICE_ACCOUNT` variables; zero `credentials_json` present |
+| **TEST-L5-27** | WIF | WIF variables set in `environment: demo` | `Settings → Environments → demo` Variables shows `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` configured |
+| **TEST-L5-28** | Branch Protection | `lab5-staging` requires `test-and-docker` to pass | `Settings → Branches` protection rule for `lab5-staging` lists `test-and-docker` as required check |
+| **TEST-L5-29** | Branch Protection | `main` requires `test-and-docker` to pass | `Settings → Branches` protection rule for `main` lists `test-and-docker` as required check |
+| **TEST-L5-30** | Merge Gate (C-02) | Failing PR is blocked from merging | Branch `test/intentionally-failing-ci-gate` → PR into `lab5-staging`; merge button disabled; "Required status checks must pass" shown |
+| **TEST-L5-31** | Merge Gate (C-02) | Passing PR is unblocked and merged | PR #21 (`issue/21-github-gcp-merge-gate` → `lab5-staging`); all checks pass; merge enabled |
