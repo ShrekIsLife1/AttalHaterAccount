@@ -33,8 +33,8 @@
 |---|---|:---:|:---:|---|:---:|
 | **#16** | GCP account, project, budget alert & baseline | **Ba** | Cl | [PR #44](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/44) | ✅ Merged |
 | **#17** | Cloud-ready configuration, probes, `.env.example` | **Cl** | Ba | [PR #45](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/45) | ✅ Merged |
-| **#18** | Dockerize application & container verification | **Ba** | Cl | [PR #46](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/46) | 🟡 In Review |
-| **#19** | CI on Pull Requests (`test-and-docker`, C-01) | **Cl** | Ba | *Pending #18* | 🔲 Planned |
+| **#18** | Dockerize application & container verification | **Ba** | Cl | [PR #46](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/46) | ✅ Merged |
+| **#19** | CI on Pull Requests (`test-and-docker`, C-01) | **Cl** | Ba | *Branch `issue/19-ci-pull-requests`* | 🟡 In Review |
 | **#20** | First deployment to GCP & domain journey (C-04) | **Ba** | Cl | *Pending #19* | 🔲 Planned |
 | **#21** | GitHub ↔ GCP (WIF) & failing PR gate (C-02) | **Cl** | Ba | *Pending #20* | 🔲 Planned |
 | **#22** | Repeatable deploy pipeline & release commit (C-06) | **Ba** | Cl | *Pending #21* | 🔲 Planned |
@@ -64,10 +64,26 @@
 
 ## Answer Part 1: CI and Quality Gate (Issues #19 & #21)
 
-*(Section populated during Issues #19 and #21)*
-- **CI Workflow File:** `.github/workflows/ci-docker.yml`
-- **Check C-01 (Passing PR):** Links and summaries of the `test-and-docker` job.
-- **Check C-02 (Failing PR Merge Gate):** Screenshot of failing temporary branch PR blocked by branch ruleset.
+### 1.1 CI Workflow Specification (`.github/workflows/ci-docker.yml`)
+- **Workflow Name:** `CI & Docker Build`
+- **Job Identifier:** `test-and-docker` (Mandatory name, required by grading rubric and branch protection gate)
+- **Triggers:**
+  - `workflow_call`: Enables reusable invocation by `deploy.yml`.
+  - `pull_request`: Evaluates all pull requests targeting `lab5-staging` or `main`.
+  - `workflow_dispatch`: Allows manual test runs from GitHub Actions console.
+- **Service Container:** Ephemeral `postgres:16-alpine` database service with automated readiness healthchecks (`pg_isready`).
+- **Pipeline Pipeline Stages:**
+  1. **Source Checkout:** `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1`.
+  2. **Runtimes Setup:** Node.js 20 with npm caching, Python 3.12 for offline deploy scripts.
+  3. **Script Syntax & Stub Verification:** Syntax check (`bash -n`) and mocked execution of `deploy.sh`, `release.sh`, `smoke_test.py` (`TEST-L5-19`).
+  4. **Backend Validation:** Clean dependency installation (`npm ci`), Prisma migration (`npx prisma migrate deploy`), idempotency seed verification (`npm run seed`), and Vitest test suite (`npm test`).
+  5. **Frontend Validation:** Client Vitest suite (`npm test`) and React production bundle compilation (`npm run build`).
+  6. **Container Verification:** Builds production multi-stage Docker image (`docker build --build-arg GIT_SHA=...`).
+
+### 1.2 Check C-01: Passing Pull Request Verification
+- Every PR into `lab5-staging` triggers `test-and-docker`.
+- Zero bypasses (`continue-on-error: false`); all test assertions must pass for the check to succeed.
+- Comprehensive test results and counts are reported across backend, frontend, deploy stubs, and container build.
 
 ---
 

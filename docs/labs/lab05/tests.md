@@ -7,7 +7,7 @@
 | **R-12, Cost Control** | #16 | — | Cloud Setup | GCP portal activation, team resources, budget controls, public repo & push protection | ✅ Done |
 | **R-02, R-04** | #17 | TEST-L5-01..04, L5-08..09 | Unit / API | Config loader, `.env.example`, session DB persistence, safe production seed | ✅ Done |
 | **R-01, C-03** | #18 | TEST-L5-10..14 | Container | Docker multi-stage build from fresh clone, docker-compose local stack, non-root user | ✅ Done |
-| **R-05, C-01** | #19 | TEST-L5-15..19 | CI Workflow | GitHub Actions `test-and-docker` job on PRs into `sprint1-staging` and `main` | 🔲 Planned |
+| **R-05, C-01** | #19 | TEST-L5-15..19 | CI Workflow | GitHub Actions `test-and-docker` job on PRs into `lab5-staging` and `main` | ✅ Done |
 | **R-03, R-04, C-04** | #20 | TEST-L5-20..25 | Live / Smoke | First deployment on Cloud Run, live domain customer order journey, failure rejections | 🔲 Planned |
 | **R-06, R-09, C-02** | #21 | TEST-L5-26..31 | Merge Gate | Workload Identity Federation, branch protection ruleset, failing PR blocked | 🔲 Planned |
 | **R-07, R-08, C-06** | #22 | TEST-L5-32..42 | Release Pipeline | `deploy.yml`, automated smoke test, release by commit SHA digest | 🔲 Planned |
@@ -42,3 +42,15 @@
 | **TEST-L5-12** | Container | Non-root runtime user (`USER node`, UID ≠ 0); zero `.env` or `.git` files inside container | `docker run --rm unimerch:test id -u` & `find /app -name '.env*'` | Pass |
 | **TEST-L5-13** | Container | Unified container serves client SPA at `GET /` and API endpoints at `GET /api/products` | `curl -s localhost:3000/ \| grep -i "<html"` & `curl -s localhost:3000/api/products` | Pass |
 | **TEST-L5-14** | Container | `GET /api/version` returns commit SHA exactly matching `GIT_SHA` passed at build time | `curl -s localhost:3000/api/version` matches `git rev-parse HEAD` | Pass |
+
+---
+
+## Detailed Test Specifications: Issue #19 (CI on Pull Requests)
+
+| TEST ID | Level | Test Description | Verification Method / Evidence | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-15** | CI | A PR targeting `lab5-staging` or `main` triggers job `test-and-docker` running all stages (deploy script stubs, server tests, client tests, Docker build) | GitHub Actions workflow trigger & run status | Pass |
+| **TEST-L5-16** | CI | Run log captures full test summaries with counts (passed/failed/skipped) for all suites including Lab 5 | GitHub Actions step execution logs | Pass |
+| **TEST-L5-17** | CI | Workflow fails when any test step fails; zero `continue-on-error` or `\|\| true` bypasses | Workflow review of `.github/workflows/ci-docker.yml` | Pass |
+| **TEST-L5-18** | CI | CI triggers consistently on PRs into both `lab5-staging` and `main`, as well as on `workflow_dispatch` | Workflow triggers `pull_request` branches config | Pass |
+| **TEST-L5-19** | CI | Offline deploy script stubs (`test_deploy_stub.sh`, `test_release_stub.sh`, `test_smoke.py`) execute in CI before backend tests | CI step 3 execution | Pass |
