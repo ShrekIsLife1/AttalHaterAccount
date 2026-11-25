@@ -10,7 +10,7 @@
 | **R-05, C-01** | #19 | TEST-L5-15..19 | CI Workflow | GitHub Actions `test-and-docker` job on PRs into `lab5-staging` and `main` | ✅ Done |
 | **R-03, R-04, C-04** | #20 | TEST-L5-20..25 | Live / Smoke | First deployment on Cloud Run, live domain customer order journey, failure rejections | ✅ Done |
 | **R-06, R-09, C-02** | #21 | TEST-L5-26..31 | Merge Gate | Workload Identity Federation, branch protection ruleset, failing PR blocked | ✅ Done |
-| **R-07, R-08, C-06** | #22 | TEST-L5-32..42 | Release Pipeline | `deploy.yml`, automated smoke test, release by commit SHA digest | 🔲 Planned |
+| **R-07, R-08, C-06** | #22 | TEST-L5-32..42 | Release Pipeline | `deploy.yml`, automated smoke test, release by commit SHA digest | ✅ Done |
 | **R-04, C-05** | #23 | TEST-L5-43..47 | Persistence / Rollback | Data persistence across service restart and redeploy, additive migrations, rollback | 🔲 Planned |
 | **Cost Control** | #24 | TEST-L5-48..51 | Operations | Pause/resume Cloud SQL procedure, Cloud Run min=0 instances, spend tracking | ✅ Done |
 | **R-08, R-11, DoD** | #25 | TEST-L5-52..58 | Documentation | Final release verification, `deployment.md`, secret scan, and LEB2 deliverable PDF | 🔲 Planned |
@@ -89,3 +89,22 @@
 | **TEST-L5-29** | Branch Protection | `main` branch requires the `test-and-docker` status check to pass before any PR can be merged | GitHub `Settings → Branches → main` protection rule lists `test-and-docker` as required status check | Pass |
 | **TEST-L5-30** | Merge Gate (C-02) | A PR with a deliberately broken test is blocked from merging: GitHub disables the "Merge pull request" button and shows "Required status checks must pass before merging" | Branch `test/intentionally-failing-ci-gate` opened as PR into `lab5-staging`; `test-and-docker` fails (intentional assertion error in `health.api.test.ts`); screenshot shows merge button disabled | Pass |
 | **TEST-L5-31** | Merge Gate (C-02) | A PR with all tests passing is unblocked and can be merged normally | PR #21 (`issue/21-github-gcp-merge-gate` → `lab5-staging`) triggers `test-and-docker`; all checks pass; merge button is enabled | Pass |
+
+---
+
+## Detailed Test Specifications: Issue #22 (Repeatable Release Pipeline)
+
+| TEST ID | Level | Test Description | Verification Method / Evidence | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-32** | CD Workflow | CD trigger specification: `deploy.yml` triggers automatically on push to `main` branch and manually via `workflow_dispatch` with optional `image_tag` input | `.github/workflows/deploy.yml` triggers configuration | Pass |
+| **TEST-L5-33** | CD Workflow | CI quality gate enforcement: `test` job calls reusable workflow `ci-docker.yml` (`test-and-docker`); `deploy` job declares `needs: test` and only runs on success | `deploy.yml` job dependency graph and conditional execution | Pass |
+| **TEST-L5-34** | CD Workflow | Broken build gate: if any CI step fails in `test-and-docker`, the `deploy` job is skipped; zero broken revisions reach GCP | Simulated CI failure halts pipeline before GCP authentication | Pass |
+| **TEST-L5-35** | WIF | Keyless deployment authentication: runner authenticates via WIF using `google-github-actions/auth` and repository variables `WIF_PROVIDER` / `WIF_SERVICE_ACCOUNT` | GitHub Actions deploy job execution log | Pass |
+| **TEST-L5-36** | Container | Release image is built with `--build-arg GIT_SHA=$IMAGE_TAG`, tagged with the full 40-character commit SHA, and pushed to Artifact Registry | Docker build and push step in GitHub Actions log | Pass |
+| **TEST-L5-37** | Release Script | Immutable digest pinning: `deploy/release.sh` resolves `$IMAGE_TAG` to `@sha256:` digest before updating any Cloud Run resource | `gcloud artifacts docker images describe` verification in `release.sh` | Pass |
+| **TEST-L5-38** | Release Script | Automated database migration gate: `s3c35c9bd-migrate` job runs with `--wait`; release halts before service update if migration fails | `test_release_stub.sh` ("migration failure blocks service update") and live run | Pass |
+| **TEST-L5-39** | Cloud Run | Atomic traffic cutover: Cloud Run service `s3c35c9bd` updated to new digest and `update-traffic --to-latest` routes 100% of traffic | `gcloud run services describe s3c35c9bd` traffic configuration | Pass |
+| **TEST-L5-40** | Smoke Test | Automated post-deploy verification: `deploy/smoke_test.py` validates `/api/health`, `/api/ready`, `/`, and `/api/products` with retry logic | Smoke test step log with all checks returning PASS | Pass |
+| **TEST-L5-41** | Traceability | Commit digest verification (R-08): `GET /api/version` on the live Cloud Run URL returns `{ "commit": "<GIT_SHA>" }` matching the release commit | `curl -s https://s3c35c9bd-4d7hbszvwq-as.a.run.app/api/version` | Pass |
+| **TEST-L5-42** | Rollback | Zero-migration fast rollback: `workflow_dispatch` with `image_tag` skips tests, build, and migration, pointing service directly to prior digest | `test_release_stub.sh` ("rollback reuses image without touching migration") and workflow condition check | Pass |
+

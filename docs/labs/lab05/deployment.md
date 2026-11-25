@@ -126,7 +126,146 @@ PROJECT_ID="cpe-se-course-2026" REGION="asia-southeast1" bash deploy/deploy.sh -
 
 ---
 
-## 5. Cost Control, Pause/Resume & Teardown Procedures (Issue #24)
+## 5. GitHub ↔ GCP Integration: Workload Identity Federation & Merge Gate (Issue #21)
+
+### Workload Identity Federation (R-06, R-09)
+
+GitHub Actions authenticates to Google Cloud **without any long-lived service-account JSON key**. Instead, the runner exchanges a short-lived GitHub OIDC token for a GCP access token using Workload Identity Federation (WIF).
+
+**How it works (keyless flow):**
+1. GitHub Actions generates a short-lived OIDC token signed by `token.actions.githubusercontent.com`.
+2. The `google-github-actions/auth` action sends that token to the GCP STS API.
+3. GCP validates the token against the WIF pool binding (repo/branch conditions) and returns a scoped access token.
+4. The runner uses that token for all subsequent `gcloud`/Docker registry operations — the token expires after 1 hour with no rotation needed.
+
+**Repository / Environment Variables (not secrets):**
+
+| Variable | Value (GitHub `Settings → Environments → demo`) |
+|---|---|
+| `WIF_PROVIDER` | `projects/670075229477/locations/global/workloadIdentityPools/s3c35c9bd-pool/providers/s3c35c9bd-provider` |
+| `WIF_SERVICE_ACCOUNT` | `s3c35c9bd-deployer@cpe-se-course-2026.iam.gserviceaccount.com` |
+| `GCP_PROJECT_ID` | `cpe-se-course-2026` |
+| `GCP_REGION` | `asia-southeast1` |
+
+No `credentials_json` secret is present in the repository. Zero long-lived credentials are stored in GitHub.
+
+**Relevant `deploy.yml` step:**
+```yaml
+- name: Authenticate to Google Cloud without a key
+  uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+  with:
+    workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+    service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+```
+
+### Branch Protection Ruleset (R-09, C-02)
+
+Both `lab5-staging` and `main` branches require the `test-and-docker` status check to pass before any pull request can be merged.
+
+**Configuration (`Settings → Branches`):**
+- **Protected branches:** `lab5-staging`, `main`
+- **Required status check:** `test-and-docker` (job id defined in `.github/workflows/ci-docker.yml`)
+- **Effect:** GitHub disables the "Merge pull request" button for any PR where `test-and-docker` has not completed with status `success`.
+
+### Check C-02: Failing PR Blocked by Merge Gate
+
+To demonstrate the merge gate in action, a temporary branch `test/intentionally-failing-ci-gate` was created from `lab5-staging` with a deliberately failing assertion:
+
+```typescript
+// server/tests/lab5/health.api.test.ts — intentional failure for C-02 demo
+it("INTENTIONAL FAILURE — merge gate demo", () => {
+  expect(true).toBe(false); // This always fails
+});
+```
+
+This branch was opened as a PR into `lab5-staging`. The `test-and-docker` job failed, and GitHub blocked the merge with the message **"Required status checks must pass before merging"**. The merge button remained disabled until the failing branch was closed without merging.
+
+### Check C-02 Verification Matrix
+
+| Test ID | Level | Verification Criterion | Evidence | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-26** | WIF | No JSON key stored in GitHub; auth uses OIDC token exchange | `deploy.yml` uses `google-github-actions/auth` with `WIF_PROVIDER`/`WIF_SERVICE_ACCOUNT` variables; zero `credentials_json` present | Pass |
+| **TEST-L5-27** | WIF | WIF variables set in `environment: demo` | `Settings → Environments → demo` Variables shows `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` configured | Pass |
+| **TEST-L5-28** | Branch Protection | `lab5-staging` requires `test-and-docker` to pass | `Settings → Branches` protection rule for `lab5-staging` lists `test-and-docker` as required check | Pass |
+| **TEST-L5-29** | Branch Protection | `main` requires `test-and-docker` to pass | `Settings → Branches` protection rule for `main` lists `test-and-docker` as required check | Pass |
+| **TEST-L5-30** | Merge Gate (C-02) | Failing PR is blocked from merging | Branch `test/intentionally-failing-ci-gate` → PR into `lab5-staging`; merge button disabled; "Required status checks must pass" shown | Pass |
+| **TEST-L5-31** | Merge Gate (C-02) | Passing PR is unblocked and merged | PR #21 (`issue/21-github-gcp-merge-gate` → `lab5-staging`); all checks pass; merge enabled | Pass |
+
+---
+
+## 6. Continuous Deployment Pipeline & Release Workflow (Issue #22 / Check C-06)
+
+### Architecture of Continuous Deployment (`.github/workflows/deploy.yml`)
+
+The production continuous deployment pipeline is triggered automatically whenever code is merged into the `main` branch, or manually via `workflow_dispatch` (used for rollbacks).
+
+```
+[ Push / Merge to main ]
+          │
+          ▼
+   ┌──────────────┐
+   │   Job 1:     │ ──(uses ci-docker.yml: test-and-docker)
+   │    test      │ ──[ Deploy stubs -> Server tests -> Client tests -> Docker build ]
+   └──────┬───────┘
+          │ (Only on success; blocks release on any test failure)
+          ▼
+   ┌──────────────┐
+   │   Job 2:     │ ──(Environment: demo)
+   │    deploy    │
+   └──────┬───────┘
+          ├─► 1. Validate inputs (IMAGE_TAG must be 40-char SHA)
+          ├─► 2. Authenticate to GCP keyless via Workload Identity Federation (WIF)
+          ├─► 3. Build & push image tagged with commit SHA:
+          │      asia-southeast1-docker.pkg.dev/cpe-se-course-2026/s3c35c9bd/s3c35c9bd:<SHA>
+          ├─► 4. Run deploy/release.sh:
+          │      ├─ Pin image to immutable @sha256 digest
+          │      ├─ Run migration job s3c35c9bd-migrate (--wait)
+          │      └─ Update Cloud Run service s3c35c9bd & traffic --to-latest
+          ├─► 5. Execute automated smoke test (deploy/smoke_test.py):
+          │      [ /api/health 200, /api/ready db:connected, / HTML, /api/products catalog ]
+          └─► 6. Write GitHub step summary with commit SHA, digest, and URL
+```
+
+### Key Security & Integrity Controls
+
+1. **Gate before Deploy (`needs: test`):**
+   The `deploy` job never executes if the `test` job (`test-and-docker`) fails or is cancelled. Broken code never triggers image building, database migration, or Cloud Run deployment.
+2. **Workload Identity Federation (Keyless Auth):**
+   The runner requests a short-lived OIDC federated token from GCP using `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT`. No static JSON key exists in GitHub Secrets.
+3. **Immutable Digest Pinning (`@sha256:...`):**
+   `deploy/release.sh` resolves the tag to an immutable container digest before executing the migration job and updating the service. This guarantees that the exact same tested binary runs the database migrations and serves user requests.
+4. **Automated Migration Gate (`--wait`):**
+   `s3c35c9bd-migrate` runs before the service is updated. If the database migration fails, `deploy/release.sh` exits immediately with code 1 (`set -e`), leaving the running Cloud Run service completely untouched.
+5. **Traceability via `GIT_SHA` (R-08):**
+   Docker is built with `--build-arg GIT_SHA=$IMAGE_TAG`. Querying `GET /api/version` on the live Cloud Run URL returns `{ "commit": "<GIT_SHA>" }` exactly matching the released Git commit SHA.
+6. **Zero-Migration Rollback Mechanism:**
+   When triggering `deploy.yml` via `workflow_dispatch` with an existing commit SHA in `image_tag`:
+   - `test` job is skipped (`!inputs.image_tag`).
+   - Image build is skipped (`env.ROLLBACK == 'true'`).
+   - Migration job is skipped (`ROLLBACK == true` in `release.sh`).
+   - Cloud Run service is instantly pointed to the previous `@sha256` digest and receives 100% traffic in seconds.
+
+---
+
+### Check C-06 Verification Matrix
+
+| Test ID | Level | Verification Criterion | Evidence / Command | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-32** | CD Workflow | Trigger on push to `main` and `workflow_dispatch` | `.github/workflows/deploy.yml` triggers configuration | Pass |
+| **TEST-L5-33** | CD Workflow | `test-and-docker` CI gate runs before `deploy` | `deploy` job has `needs: test` and condition `needs.test.result == 'success'` | Pass |
+| **TEST-L5-34** | CD Workflow | Broken test halts release pipeline before GCP call | CI test failure skips `deploy` job completely | Pass |
+| **TEST-L5-35** | WIF | Keyless deployment authentication via WIF | `google-github-actions/auth` exchanges GitHub token for GCP STS token | Pass |
+| **TEST-L5-36** | Container | Release image built with `GIT_SHA` build arg and pushed to Artifact Registry | Image tagged `.../s3c35c9bd/s3c35c9bd:$IMAGE_TAG` | Pass |
+| **TEST-L5-37** | Release Script | Tag resolved to immutable `@sha256` digest | `gcloud artifacts docker images describe` in `deploy/release.sh` | Pass |
+| **TEST-L5-38** | Release Script | Database migration job executes with `--wait` | `s3c35c9bd-migrate` runs and gates service update | Pass |
+| **TEST-L5-39** | Cloud Run | Service updated with digest and traffic set `--to-latest` | `gcloud run services update-traffic s3c35c9bd --to-latest` | Pass |
+| **TEST-L5-40** | Smoke Test | Automated post-deploy smoke test validates endpoints | `python3 deploy/smoke_test.py "$SERVICE_URL"` passes all probes | Pass |
+| **TEST-L5-41** | Traceability | Live `/api/version` matches release commit SHA | `curl -fsS https://s3c35c9bd-4d7hbszvwq-as.a.run.app/api/version` | Pass |
+| **TEST-L5-42** | Rollback | Rollback bypasses build and migration | `deploy/release.sh` with `ROLLBACK=true` restores prior digest | Pass |
+
+---
+
+## 7. Cost Control, Pause/Resume & Teardown Procedures (Issue #24)
 
 ### Cost Model & Inactivity Strategy
 In the provisioned GCP architecture for team `s3c35c9bd`, resources incur costs according to two distinct billing models:
@@ -266,67 +405,3 @@ PROJECT_ID="cpe-se-course-2026" REGION="asia-southeast1" bash deploy/teardown.sh
 | **TEST-L5-50** | Graceful 503 handling while paused | When DB is paused, `GET /api/ready` returns 503 `{"status":"not_ready","db":"disconnected"}`; zero crashes, zero secret leaks | Pass |
 | **TEST-L5-51** | Idle scale-to-zero & quota audit | Cloud Run `min-instances=0`, `max-instances=3`, `memory=512Mi`; GCP Budget alert configured with 50%, 90%, 100% notification thresholds | Pass |
 
-## 5. GitHub ↔ GCP Integration: Workload Identity Federation & Merge Gate (Issue #21)
-
-### Workload Identity Federation (R-06, R-09)
-
-GitHub Actions authenticates to Google Cloud **without any long-lived service-account JSON key**. Instead, the runner exchanges a short-lived GitHub OIDC token for a GCP access token using Workload Identity Federation (WIF).
-
-**How it works (keyless flow):**
-1. GitHub Actions generates a short-lived OIDC token signed by `token.actions.githubusercontent.com`.
-2. The `google-github-actions/auth` action sends that token to the GCP STS API.
-3. GCP validates the token against the WIF pool binding (repo/branch conditions) and returns a scoped access token.
-4. The runner uses that token for all subsequent `gcloud`/Docker registry operations — the token expires after 1 hour with no rotation needed.
-
-**Repository / Environment Variables (not secrets):**
-
-| Variable | Value (GitHub `Settings → Environments → demo`) |
-|---|---|
-| `WIF_PROVIDER` | `projects/<project-number>/locations/global/workloadIdentityPools/s3c35c9bd-pool/providers/s3c35c9bd-provider` |
-| `WIF_SERVICE_ACCOUNT` | `s3c35c9bd-runner@cpe-se-course-2026.iam.gserviceaccount.com` |
-| `GCP_PROJECT_ID` | `cpe-se-course-2026` |
-| `GCP_REGION` | `asia-southeast1` |
-
-No `credentials_json` secret is present in the repository. Zero long-lived credentials are stored in GitHub.
-
-**Relevant `deploy.yml` step:**
-```yaml
-- name: Authenticate to Google Cloud without a key
-  uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-  with:
-    workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-    service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
-```
-
-### Branch Protection Ruleset (R-09, C-02)
-
-Both `lab5-staging` and `main` branches require the `test-and-docker` status check to pass before any pull request can be merged.
-
-**Configuration (`Settings → Branches`):**
-- **Protected branches:** `lab5-staging`, `main`
-- **Required status check:** `test-and-docker` (job id defined in `.github/workflows/ci-docker.yml`)
-- **Effect:** GitHub disables the "Merge pull request" button for any PR where `test-and-docker` has not completed with status `success`.
-
-### Check C-02: Failing PR Blocked by Merge Gate
-
-To demonstrate the merge gate in action, a temporary branch `test/intentionally-failing-ci-gate` was created from `lab5-staging` with a deliberately failing assertion:
-
-```typescript
-// server/tests/lab5/health.api.test.ts — intentional failure for C-02 demo
-it("INTENTIONAL FAILURE — merge gate demo", () => {
-  expect(true).toBe(false); // This always fails
-});
-```
-
-This branch was opened as a PR into `lab5-staging`. The `test-and-docker` job failed, and GitHub blocked the merge with the message **"Required status checks must pass before merging"**. The merge button remained disabled until the failing branch was closed without merging.
-
-### Check C-02 Verification Matrix
-
-| Test ID | Level | Verification Criterion | Evidence |
-|---|---|---|---|
-| **TEST-L5-26** | WIF | No JSON key stored in GitHub; auth uses OIDC token exchange | `deploy.yml` uses `google-github-actions/auth` with `WIF_PROVIDER`/`WIF_SERVICE_ACCOUNT` variables; zero `credentials_json` present |
-| **TEST-L5-27** | WIF | WIF variables set in `environment: demo` | `Settings → Environments → demo` Variables shows `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` configured |
-| **TEST-L5-28** | Branch Protection | `lab5-staging` requires `test-and-docker` to pass | `Settings → Branches` protection rule for `lab5-staging` lists `test-and-docker` as required check |
-| **TEST-L5-29** | Branch Protection | `main` requires `test-and-docker` to pass | `Settings → Branches` protection rule for `main` lists `test-and-docker` as required check |
-| **TEST-L5-30** | Merge Gate (C-02) | Failing PR is blocked from merging | Branch `test/intentionally-failing-ci-gate` → PR into `lab5-staging`; merge button disabled; "Required status checks must pass" shown |
-| **TEST-L5-31** | Merge Gate (C-02) | Passing PR is unblocked and merged | PR #21 (`issue/21-github-gcp-merge-gate` → `lab5-staging`); all checks pass; merge enabled |
