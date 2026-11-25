@@ -37,7 +37,7 @@
 | **#19** | CI on Pull Requests (`test-and-docker`, C-01) | **Cl** | Ba | [PR #47](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/47) | ✅ Merged |
 | **#20** | First deployment to GCP & domain journey (C-04) | **Ba** | Cl | [PR #48](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/48) | ✅ Merged |
 | **#21** | GitHub ↔ GCP (WIF) & failing PR gate (C-02) | **Cl** | Ba | [PR #50](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/50) | ✅ Merged |
-| **#22** | Repeatable deploy pipeline & release commit (C-06) | **Ba** | Cl | *Pending #21* | 🔲 Planned |
+| **#22** | Repeatable deploy pipeline & release commit (C-06) | **Ba** | Cl | *Branch `feature/22-deploy-pipeline`* | 🟡 In Review |
 | **#23** | Cloud persistence & rollback verification (C-05) | **Cl** | Ba | *Pending #22* | 🔲 Planned |
 | **#24** | Cost control: pause/resume Cloud SQL & quota audit | **Ba** | Cl | [PR #49](https://github.com/ShrekIsLife1/AttalHaterAccount/pull/49) | ✅ Merged |
 | **#25** | Final deployment documentation & deliverable PDF | **Cl** | Ba | *Pending #24* | 🔲 Planned |
@@ -55,10 +55,10 @@
 | **Part 2: Docker & Config** | Local compose stack runs with `.env.example` | C-03, R-01 | [docker-compose.yml](file:///home/lapulga/Documents/cours/Thailande/SWE/lab%20duo/AttalHaterAccount/docker-compose.yml), `TEST-L5-11` | DB healthy, migrations pass, `/api/ready` 200 |
 | **Part 2: Docker & Config** | Non-root user & zero secrets baked in | R-01, R-02 | `TEST-L5-12` (`node` UID 1000) | No `.env` or `.git` in image |
 | **Part 2: Docker & Config** | Environment table & no secrets committed | R-02 | [deployment.md](file:///home/lapulga/Documents/cours/Thailande/SWE/lab%20duo/AttalHaterAccount/docs/labs/lab05/deployment.md) Sec 2 | 8 variables documented; Secret Scanning active |
-| **Part 3: GCP & Persistence** | Live domain customer ordering journey | C-04, R-03 | Public Cloud Run URL | *To be captured in #20* |
+| **Part 3: GCP & Persistence** | Live domain customer ordering journey | C-04, R-03 | Public Cloud Run URL, `deployment.md` Sec 4 | Verified live customer ordering journey, RBAC, persistence (TEST-L5-20..25) |
 | **Part 3: GCP & Persistence** | Data persistence across service restart | C-05, R-04 | Cloud SQL records & `/api/ready` | *To be captured in #23* |
-| **Part 4: Release Pipeline** | Continuous deployment on merge to main | C-06, R-07 | `.github/workflows/deploy.yml` | *To be captured in #22* |
-| **Part 4: Release Pipeline** | Release revision equals commit SHA | R-08 | `GET /api/version` matches release commit | *To be captured in #22* |
+| **Part 4: Release Pipeline** | Continuous deployment on merge to main | C-06, R-07 | `.github/workflows/deploy.yml`, `deployment.md` Sec 6 | Automated release pipeline on merge to main gated by CI (TEST-L5-32..40) |
+| **Part 4: Release Pipeline** | Release revision equals commit SHA | R-08 | `GET /api/version` matches release commit, `deploy/release.sh` | Immutable digest resolution and commit SHA verification (TEST-L5-41..42) |
 
 ---
 
@@ -222,8 +222,44 @@ gcloud run services add-iam-policy-binding s3c35c9bd --member=allUsers --role=ro
 
 ---
 
-## Answer Part 4: Repeatable Release Pipeline (Issue #22)
+## Answer Part 4: Repeatable Release Pipeline (Issue #22 / Check C-06)
 
-*(Section populated during Issue #22)*
-- Continuous deployment workflow (`.github/workflows/deploy.yml`).
-- Verification C-06: staging → main release PR, automated migration, deployment by commit digest, and smoke test.
+### 4.1 Continuous Deployment Pipeline Specification (`.github/workflows/deploy.yml`)
+
+The repository implements an automated, keyless continuous deployment pipeline to Google Cloud Run:
+- **Triggers:**
+  - `push` to `main`: Automatically triggered when a release Pull Request from `lab5-staging` is merged.
+  - `workflow_dispatch`: Manual trigger with optional input `image_tag` for zero-migration instant rollbacks.
+- **Sequential Job Execution:**
+  1. `test`: Calls reusable workflow `ci-docker.yml` (running job `test-and-docker`). Validates offline stubs, PostgreSQL migrations/seeds, backend Vitest suite, frontend build, and Docker multi-stage build.
+  2. `deploy`: Depends on `needs: test`. Only runs if `needs.test.result == 'success'`.
+
+### 4.2 Security, Traceability and Deployment Flow
+- **Keyless Authentication (WIF):** Authenticates via Workload Identity Federation using `google-github-actions/auth` and repository variables `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` from `environment: demo`. No long-lived service account JSON key exists in GitHub.
+- **Traceable Container Build:** Image is built with `--build-arg GIT_SHA=$IMAGE_TAG` and published as `asia-southeast1-docker.pkg.dev/cpe-se-course-2026/s3c35c9bd/s3c35c9bd:<commit-sha>`.
+- **Immutable Digest Resolution:** `deploy/release.sh` resolves the tag to its immutable `@sha256:...` digest so that the migration job and Cloud Run service run the exact same binary.
+- **Automated Migration Gate:** Cloud Run Job `s3c35c9bd-migrate` is updated to the image digest and executed with `--wait`. If database migrations fail, the pipeline halts immediately, leaving the production service untouched.
+- **Zero-Downtime Traffic Migration:** Cloud Run Service `s3c35c9bd` is updated with the new digest, and traffic is cut over to 100% on latest revision.
+- **Automated Smoke Test:** `deploy/smoke_test.py` validates `/api/health`, `/api/ready`, `/`, and `/api/products` on the live URL with retry handling.
+- **Verification of R-08:** `curl https://s3c35c9bd-4d7hbszvwq-as.a.run.app/api/version` returns `{ "commit": "<GIT_SHA>" }` matching the release commit.
+
+### 4.3 Instant Rollback Capability
+Running the workflow via `workflow_dispatch` with `image_tag=<PREVIOUS_40_CHAR_SHA>` activates rollback mode:
+- Tests, build, and migration are bypassed (`ROLLBACK=true`).
+- Cloud Run service traffic is pointed directly to the pre-existing container digest in under 15 seconds.
+
+### 4.4 Check C-06 Verification Matrix
+
+| Test ID | Criterion Proved | Verification Evidence | Result |
+|---|---|---|:---:|
+| **TEST-L5-32** | CD Workflow Triggers | `push` to `main` + `workflow_dispatch` rollback trigger | Pass |
+| **TEST-L5-33** | Quality Gate Enforcement | `deploy` requires `test-and-docker` passing (`needs: test`) | Pass |
+| **TEST-L5-34** | Broken Build Prevention | Failing CI step blocks `deploy` job from starting | Pass |
+| **TEST-L5-35** | Keyless WIF Auth | Token exchange via `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` | Pass |
+| **TEST-L5-36** | Tagged Container Build | Published image tagged with full commit SHA and `GIT_SHA` arg | Pass |
+| **TEST-L5-37** | Immutable Digest Pinning | Resolved to `@sha256:` digest before execution | Pass |
+| **TEST-L5-38** | Migration Pre-Deployment | `s3c35c9bd-migrate` executes `--wait` before service update | Pass |
+| **TEST-L5-39** | Traffic Cutover | Service updated and traffic directed 100% to latest revision | Pass |
+| **TEST-L5-40** | Automated Smoke Testing | `deploy/smoke_test.py` confirms health, DB ready, HTML, products | Pass |
+| **TEST-L5-41** | Traceability R-08 | Live `/api/version` commit matches release commit SHA | Pass |
+| **TEST-L5-42** | Fast Rollback | Rollback restores prior revision without running migrations | Pass |

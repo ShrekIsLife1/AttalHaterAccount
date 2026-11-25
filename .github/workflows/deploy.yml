@@ -107,8 +107,8 @@ jobs:
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       REGION: ${{ vars.GCP_REGION }}
       # CHANGE ME: names of your Cloud Run service and migration job.
-      SERVICE_NAME: toktickit
-      MIGRATE_JOB_NAME: toktickit-migrate
+      SERVICE_NAME: s3c35c9bd
+      MIGRATE_JOB_NAME: s3c35c9bd-migrate
       # Image tag = commit SHA (or the rollback SHA that was typed in).
       IMAGE_TAG: ${{ inputs.image_tag || github.sha }}
       ROLLBACK: ${{ inputs.image_tag != '' }}
@@ -146,15 +146,14 @@ jobs:
 
       # ------------------------------------------------------------------------
       # 4. Build and push the image (skipped for rollbacks)
-      #    CHANGE ME: image path `.../toktickit/toktickit` must match the
-      #    Artifact Registry repo and service names (see deploy/release.sh).
+      #    Artifact Registry repo and service names match deploy/release.sh.
       # ------------------------------------------------------------------------
       - name: Build and push image
         if: env.ROLLBACK != 'true'
         run: |
           gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
-          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/toktickit/toktickit:$IMAGE_TAG"
-          docker build --tag "$IMAGE" .
+          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/s3c35c9bd/s3c35c9bd:$IMAGE_TAG"
+          docker build --build-arg GIT_SHA="$IMAGE_TAG" --tag "$IMAGE" .
           docker push "$IMAGE"
 
       # ------------------------------------------------------------------------
@@ -167,12 +166,11 @@ jobs:
 
       # ------------------------------------------------------------------------
       # 6. Smoke test the live URL
-      #    CHANGE ME: Python setup + script if you use another smoke test.
       # ------------------------------------------------------------------------
-      - name: Setup Python 3.14
+      - name: Setup Python 3.12
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14"
+          python-version: "3.12"
 
       - name: Smoke test public URL
         env:
@@ -187,11 +185,11 @@ jobs:
       - name: Record deployment
         run: |
           {
-            echo '### TokTickIT demo deployment'
+            echo '### UniMerch demo deployment'
             echo "- Commit image tag: \`$IMAGE_TAG\`"
             echo "- Digest: \`$DEPLOYED_IMAGE\`"
             echo "- Rollback: $ROLLBACK"
             echo "- URL: $SERVICE_URL"
-            echo '- Smoke test: passed (health, readiness/DB, HTML, categories).'
+            echo '- Smoke test: passed (health, readiness/DB, HTML, products).'
             echo '- See smoke step for optional login check status.'
           } >> "$GITHUB_STEP_SUMMARY"
