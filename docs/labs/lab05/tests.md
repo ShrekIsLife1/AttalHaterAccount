@@ -13,7 +13,7 @@
 | **R-07, R-08, C-06** | #22 | TEST-L5-32..42 | Release Pipeline | `deploy.yml`, automated smoke test, release by commit SHA digest | ✅ Done |
 | **R-04, C-05** | #23 | TEST-L5-43..47 | Persistence / Rollback | Data persistence across service restart and redeploy, additive migrations, rollback | ✅ Done |
 | **Cost Control** | #24 | TEST-L5-48..51 | Operations | Pause/resume Cloud SQL procedure, Cloud Run min=0 instances, spend tracking | ✅ Done |
-| **R-08, R-11, DoD** | #25 | TEST-L5-52..58 | Documentation | Final release verification, `deployment.md`, secret scan, and LEB2 deliverable PDF | 🔲 Planned |
+| **R-08, R-11, DoD** | #25 | TEST-L5-52..58 | Documentation | Final release verification, `deployment.md`, secret scan, and LEB2 deliverable PDF | ✅ Done |
 
 ---
 
@@ -120,3 +120,17 @@
 | **TEST-L5-45** | Persistence | Prisma migrations are strictly additive: `prisma/migrations/` contains only forward migrations with no destructive `DROP TABLE` or `DROP COLUMN` statements | `grep -rn "DROP TABLE\|DROP COLUMN" prisma/migrations/` returns zero results | Pass |
 | **TEST-L5-46** | Persistence | Cloud SQL instance and data survive a pause/resume cycle (issue #24): records present before pause are still present after resume without any restore procedure | Execute pause (`--activation-policy=NEVER`) then resume (`--activation-policy=ALWAYS`); `GET /api/orders/my-orders` returns same orders | Pass |
 | **TEST-L5-47** | Rollback | Fast rollback via `workflow_dispatch image_tag` restores a prior Cloud Run revision without touching Cloud SQL: prior orders still accessible after rollback, and `GET /api/version` returns the rolled-back commit SHA | Trigger `workflow_dispatch` with the previous commit SHA as `image_tag`; verify `GET /api/version` and order data intact | Pass |
+
+---
+
+## Detailed Test Specifications: Issue #25 (Final Documentation & Deliverable PDF)
+
+| TEST ID | Level | Test Description | Verification Method / Evidence | Result |
+|---|---|---|---|:---:|
+| **TEST-L5-52** | Documentation | `docs/labs/lab05/deployment.md` is complete and covers all Lab 5 sections (GCP baseline, env vars, Docker, first deploy, WIF/merge gate, release pipeline, pause/resume, persistence/rollback, final sign-off) | Manual review of `docs/labs/lab05/deployment.md` Sections 1–9 | Pass |
+| **TEST-L5-53** | Documentation | `docs/labs/lab05/tests.md` traces every planned test ID (`TEST-L5-01` through `TEST-L5-58`) with status `Pass` and all Lab 5 issues marked `Done` | Review of consolidated test map and detailed tables in `tests.md` | Pass |
+| **TEST-L5-54** | Security | Secret scan across Git tracked files: zero `.env`, `.pem`, `.key`, `credentials.json`, or hardcoded GCP/DB passwords committed | `git ls-files` & pattern scan; GitHub Secret Scanning & Push Protection enabled | Pass |
+| **TEST-L5-55** | Traceability | Release verification (R-08): `GET /api/version` on live Cloud Run service matches the `main` release commit SHA | `curl -fsS https://s3c35c9bd-4d7hbszvwq-as.a.run.app/api/version` | Pass |
+| **TEST-L5-56** | Operations | Public repository & pair contribution verification (R-10, R-11, R-12): repository accessible in incognito, alternating Author/Reviewer roles across issues #16–#25 | Incognito browser check & GitHub PR history (#44–#53) | Pass |
+| **TEST-L5-57** | Deliverable | Minimalist deliverable report (`docs/deliverable-2/PDF_DRAFT.md` and `lab5_sec1_AttalHaterAccount.pdf`) follows the concise Lab 3 format with direct links and screenshot placeholders | Review of `docs/deliverable-2/PDF_DRAFT.md` and generated PDF | Pass |
+| **TEST-L5-58** | DoD | All Lab 5 tests (backend, frontend, deploy stubs) pass on `lab5-staging` with zero skipped or relaxed assertions | `npm test` (server & client) and CI `test-and-docker` green | Pass |
