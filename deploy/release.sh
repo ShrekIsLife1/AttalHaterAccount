@@ -10,7 +10,7 @@
 #
 # INPUT (environment variables)
 #   PROJECT_ID, REGION, IMAGE_TAG   required (IMAGE_TAG = full 40-char commit SHA)
-#   SERVICE_NAME, MIGRATE_JOB_NAME  optional (default: toktickit, toktickit-migrate)
+#   SERVICE_NAME, MIGRATE_JOB_NAME  optional (default: toktickit, s3c35c9bd-migrate)
 #   ROLLBACK                        true | false (default false)
 #   GITHUB_ENV                      when set, SERVICE_URL / DEPLOYED_IMAGE are
 #                                   appended so later workflow steps can use them
@@ -30,7 +30,7 @@
 #
 # ⭐ CHANGE ME — groups using another tech stack must review:
 #   # CHANGE ME: default SERVICE_NAME / MIGRATE_JOB_NAME and the image path
-#   #            `toktickit/toktickit` (Artifact Registry repo / image name)
+#   #            `s3c35c9bd/toktickit` (Artifact Registry repo / image name)
 #   # CHANGE ME: how the migration is run (the Cloud Run job is created by
 #   #            deploy/deploy.sh step 10 — change the command there)
 # ==============================================================================
@@ -49,6 +49,7 @@ ROLLBACK="${ROLLBACK:-false}"
 
 # ------------------------------------------------------------------------------
 # 2. Find the image and pin it by digest
+#    CHANGE ME: `s3c35c9bd/toktickit` = <Artifact Registry repo>/<image name>.
 # ------------------------------------------------------------------------------
 IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/s3c35c9bd/s3c35c9bd:$IMAGE_TAG"
 # Resolve to a digest so the job and service run the exact same immutable image.

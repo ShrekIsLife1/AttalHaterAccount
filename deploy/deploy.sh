@@ -156,7 +156,7 @@ fi
 #        service, so a broken migration never reaches users.
 #     CHANGE ME: `--args` (prisma migrate deploy && npm run prisma:seed) is
 #        Prisma/npm specific — use your stack's migrate/seed command.
-#     deploy.yml / release.sh later re-run this same job (name: toktickit-migrate).
+#     deploy.yml / release.sh later re-run this same job (name: s3c35c9bd-migrate).
 # ==============================================================================
 run_cmd gcloud run jobs update "$MIGRATE_JOB_NAME" \
   --image "$IMAGE_URI" \
@@ -193,7 +193,7 @@ run_cmd gcloud run services update "$SERVICE_NAME" \
   --service-account "$SA_EMAIL" \
   --add-cloudsql-instances "$SQL_CONN_NAME" \
   --set-secrets "DATABASE_URL=${SECRET_DB_URL}:latest" \
-  --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok,SESSION_SECRET=unimerch-super-secret-session-key-change-in-production" \
+  --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok" \
   --min-instances 0 \
   --max-instances 1 \
   --memory 512Mi \
