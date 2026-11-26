@@ -65,17 +65,17 @@ if [[ "$ROLLBACK" == false ]]; then
   # If SMOKE_PASSWORD is set (from GitHub Secrets) use it as SEED_PASSWORD directly
   # (overrides the GCP-managed s3c35c9bd-demo-password). Otherwise fall back to the secret.
   if [[ -n "${SMOKE_PASSWORD:-}" ]]; then
-    SEED_ENV_OVERRIDE="SEED_PASSWORD=$SMOKE_PASSWORD"
     JOB_SECRETS="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest"
-    REMOVE_SECRETS_FLAG="--remove-secrets=SEED_PASSWORD"
+    EXTRA_ENV="NODE_ENV=production,TZ=Asia/Bangkok,SEED_DEMO_DATA=true,SEED_PASSWORD=$SMOKE_PASSWORD"
+    # gcloud does not allow --remove-secrets and --set-secrets in one call.
+    # First clear SEED_PASSWORD if it is currently bound as a secret, then set it as a plain env var.
+    gcloud run jobs update "$MIGRATE_JOB_NAME" \
+      --project="$PROJECT_ID" --region="$REGION" \
+      --remove-secrets=SEED_PASSWORD --quiet 2>/dev/null || true
   else
-    SEED_ENV_OVERRIDE=""
     JOB_SECRETS="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest,SEED_PASSWORD=s3c35c9bd-demo-password:latest"
-    REMOVE_SECRETS_FLAG=""
+    EXTRA_ENV="NODE_ENV=production,TZ=Asia/Bangkok,SEED_DEMO_DATA=true"
   fi
-
-  EXTRA_ENV="NODE_ENV=production,TZ=Asia/Bangkok,SEED_DEMO_DATA=true"
-  [[ -n "$SEED_ENV_OVERRIDE" ]] && EXTRA_ENV="${EXTRA_ENV},${SEED_ENV_OVERRIDE}"
 
   gcloud run jobs update "$MIGRATE_JOB_NAME" \
     --image="$DIGEST_IMAGE" \
@@ -83,7 +83,6 @@ if [[ "$ROLLBACK" == false ]]; then
     --region="$REGION" \
     --set-cloudsql-instances="${PROJECT_ID}:${REGION}:s3c35c9bd-pg" \
     --set-secrets="$JOB_SECRETS" \
-    ${REMOVE_SECRETS_FLAG:+"$REMOVE_SECRETS_FLAG"} \
     --set-env-vars="$EXTRA_ENV" \
     --command="sh" \
     --args="-c,npx prisma migrate deploy && npx tsx prisma/seed.ts" \
