@@ -61,13 +61,27 @@ DIGEST_IMAGE="$(gcloud artifacts docker images describe "$IMAGE" --project="$PRO
 #    ⭐ IMPORTANT: a failure here aborts the release (set -e) — service untouched.
 # ------------------------------------------------------------------------------
 if [[ "$ROLLBACK" == false ]]; then
+  # Build the secrets/env for the migration job.
+  # If SMOKE_PASSWORD is set (from GitHub Secrets) use it as SEED_PASSWORD directly
+  # (overrides the GCP-managed s3c35c9bd-demo-password). Otherwise fall back to the secret.
+  if [[ -n "${SMOKE_PASSWORD:-}" ]]; then
+    SEED_ENV_OVERRIDE="SEED_PASSWORD=$SMOKE_PASSWORD"
+    JOB_SECRETS="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest"
+  else
+    SEED_ENV_OVERRIDE=""
+    JOB_SECRETS="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest,SEED_PASSWORD=s3c35c9bd-demo-password:latest"
+  fi
+
+  EXTRA_ENV="NODE_ENV=production,TZ=Asia/Bangkok,SEED_DEMO_DATA=true"
+  [[ -n "$SEED_ENV_OVERRIDE" ]] && EXTRA_ENV="${EXTRA_ENV},${SEED_ENV_OVERRIDE}"
+
   gcloud run jobs update "$MIGRATE_JOB_NAME" \
     --image="$DIGEST_IMAGE" \
     --project="$PROJECT_ID" \
     --region="$REGION" \
     --set-cloudsql-instances="${PROJECT_ID}:${REGION}:s3c35c9bd-pg" \
-    --set-secrets="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest,SEED_PASSWORD=s3c35c9bd-demo-password:latest" \
-    --set-env-vars="NODE_ENV=production,TZ=Asia/Bangkok,SEED_DEMO_DATA=true" \
+    --set-secrets="$JOB_SECRETS" \
+    --set-env-vars="$EXTRA_ENV" \
     --command="sh" \
     --args="-c,npx prisma migrate deploy && npx tsx prisma/seed.ts" \
     --quiet

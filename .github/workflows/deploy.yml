@@ -163,6 +163,8 @@ jobs:
       #    DEPLOYED_IMAGE for the next steps.
       # ------------------------------------------------------------------------
       - name: Verify image, migrate and deploy
+        env:
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
         run: bash deploy/release.sh
 
       # ------------------------------------------------------------------------
