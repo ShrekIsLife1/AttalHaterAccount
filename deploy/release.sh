@@ -67,9 +67,11 @@ if [[ "$ROLLBACK" == false ]]; then
   if [[ -n "${SMOKE_PASSWORD:-}" ]]; then
     SEED_ENV_OVERRIDE="SEED_PASSWORD=$SMOKE_PASSWORD"
     JOB_SECRETS="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest"
+    REMOVE_SECRETS_FLAG="--remove-secrets=SEED_PASSWORD"
   else
     SEED_ENV_OVERRIDE=""
     JOB_SECRETS="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest,SEED_PASSWORD=s3c35c9bd-demo-password:latest"
+    REMOVE_SECRETS_FLAG=""
   fi
 
   EXTRA_ENV="NODE_ENV=production,TZ=Asia/Bangkok,SEED_DEMO_DATA=true"
@@ -81,6 +83,7 @@ if [[ "$ROLLBACK" == false ]]; then
     --region="$REGION" \
     --set-cloudsql-instances="${PROJECT_ID}:${REGION}:s3c35c9bd-pg" \
     --set-secrets="$JOB_SECRETS" \
+    ${REMOVE_SECRETS_FLAG:+"$REMOVE_SECRETS_FLAG"} \
     --set-env-vars="$EXTRA_ENV" \
     --command="sh" \
     --args="-c,npx prisma migrate deploy && npx tsx prisma/seed.ts" \
