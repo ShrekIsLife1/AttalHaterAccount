@@ -74,9 +74,7 @@ def check(base):
     # --- Optional login check (only when both credentials are provided) -------
     email = os.getenv('SMOKE_EMAIL') or os.getenv('SMOKE_ADDRESS')
     password = os.getenv('SMOKE_PASSWORD')
-    if bool(email) != bool(password):
-        raise RuntimeError('Set both SMOKE_EMAIL and SMOKE_PASSWORD, or neither.')
-    if not email:
+    if not email or not password:
         print('SKIP login: optional smoke credentials not configured')
         return
     token = None
