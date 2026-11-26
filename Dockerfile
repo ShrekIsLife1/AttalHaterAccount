@@ -62,7 +62,8 @@ COPY server/package*.json ./
 RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 COPY server/ ./
 # CHANGE ME: `prisma generate` is Prisma-specific; drop it for other ORMs.
-RUN npx prisma generate && npm run build
+RUN npx prisma generate && npm run build && \
+    (test -f dist/src/index.js && echo 'import "./src/index.js";' > dist/index.js || true)
 
 # ============================================================================
 # Stage 3: Unified Production Runtime (Serves API + Built React SPA on :3000)
@@ -90,8 +91,8 @@ ENV GIT_SHA=${GIT_SHA}
 ENV NODE_ENV=production
 ENV TZ=Asia/Bangkok
 # CHANGE ME: PORT must match your app AND `--port` in deploy/deploy.sh (step 11).
-ENV PORT=3000
-EXPOSE 3000
+ENV PORT=8080
+EXPOSE 8080
 
 # Do not run as root inside the container.
 USER node
@@ -99,4 +100,4 @@ USER node
 # --- Start command ------------------------------------------------------------
 # CHANGE ME: replace `node dist/index.js` with your app's start command.
 ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/src/index.js"]

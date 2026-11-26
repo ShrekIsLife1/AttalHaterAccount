@@ -30,7 +30,8 @@ COPY tsconfig.json ./
 COPY src ./src/
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
-RUN npm run build && chmod +x ./docker-entrypoint.sh
+RUN npm run build && chmod +x ./docker-entrypoint.sh && \
+    (test -f dist/src/index.js && echo 'import "./src/index.js";' > dist/index.js || true)
 
 # --- Runtime settings ---------------------------------------------------------
 ARG GIT_SHA="dev"
@@ -46,4 +47,4 @@ USER node
 
 # CHANGE ME: start command for your backend.
 ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/src/index.js"]

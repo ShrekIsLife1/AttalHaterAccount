@@ -79,7 +79,15 @@ fi
 # ------------------------------------------------------------------------------
 # 4. Point the Cloud Run service at the image and send it 100% of traffic
 # ------------------------------------------------------------------------------
-gcloud run services update "$SERVICE_NAME" --image="$DIGEST_IMAGE" --project="$PROJECT_ID" --region="$REGION" --quiet
+gcloud run services update "$SERVICE_NAME" \
+  --image="$DIGEST_IMAGE" \
+  --project="$PROJECT_ID" \
+  --region="$REGION" \
+  --port=8080 \
+  --set-cloudsql-instances="${PROJECT_ID}:${REGION}:s3c35c9bd-pg" \
+  --set-secrets="DATABASE_URL=s3c35c9bd-database-url:latest" \
+  --set-env-vars="NODE_ENV=production,TZ=Asia/Bangkok" \
+  --quiet
 # Restore 100% traffic to the new latest revision even if it was previously pinned.
 gcloud run services update-traffic "$SERVICE_NAME" --to-latest --project="$PROJECT_ID" --region="$REGION" --quiet
 
