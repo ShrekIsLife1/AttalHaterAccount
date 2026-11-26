@@ -72,7 +72,8 @@ def check(base):
         print('PASS ' + path)
 
     # --- Optional login check (only when both credentials are provided) -------
-    email, password = os.getenv('SMOKE_EMAIL'), os.getenv('SMOKE_PASSWORD')
+    email = os.getenv('SMOKE_EMAIL') or os.getenv('SMOKE_ADDRESS')
+    password = os.getenv('SMOKE_PASSWORD')
     if bool(email) != bool(password):
         raise RuntimeError('Set both SMOKE_EMAIL and SMOKE_PASSWORD, or neither.')
     if not email:
@@ -80,8 +81,8 @@ def check(base):
         return
     token = None
     try:
-        login = json.loads(request(base, '/api/auth/login', {'email': email, 'password': password}))
-        token = login['token']
+        login_res = json.loads(request(base, '/api/auth/login', {'email': email, 'password': password}))
+        token = login_res.get('token') if isinstance(login_res, dict) else None
         request(base, '/api/auth/me', token=token)
         print('PASS login and authenticated /api/auth/me')
     except (urllib.error.URLError, TimeoutError, ValueError, KeyError):

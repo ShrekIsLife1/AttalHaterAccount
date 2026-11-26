@@ -66,8 +66,10 @@ if [[ "$ROLLBACK" == false ]]; then
     --project="$PROJECT_ID" \
     --region="$REGION" \
     --set-cloudsql-instances="${PROJECT_ID}:${REGION}:s3c35c9bd-pg" \
-    --set-secrets="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest" \
+    --set-secrets="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest,SEED_PASSWORD=s3c35c9bd-demo-password:latest" \
     --set-env-vars="NODE_ENV=production,TZ=Asia/Bangkok,SEED_DEMO_DATA=false" \
+    --command="sh" \
+    --args="-c,npx prisma migrate deploy" \
     --quiet
   gcloud run jobs execute "$MIGRATE_JOB_NAME" --wait --project="$PROJECT_ID" --region="$REGION" --quiet
 else

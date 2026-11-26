@@ -2,19 +2,25 @@ import { getPrisma } from "../src/prisma.js";
 import bcrypt from "bcryptjs";
 
 export async function runSeed() {
+  if (process.env.SEED_DEMO_DATA === "false") {
+    console.log("SEED_DEMO_DATA is false: skipping seed.");
+    return;
+  }
+
   const prisma = getPrisma();
   const isProduction = process.env.NODE_ENV === "production";
+  const seedPassword = process.env.SEED_PASSWORD || process.env.DEMO_USER_PASSWORD;
 
   if (isProduction) {
-    if (!process.env.SEED_PASSWORD) {
+    if (!seedPassword) {
       throw new Error("Missing required environment variable: SEED_PASSWORD is required in production mode");
     }
-    if (process.env.SEED_PASSWORD === "password123") {
+    if (seedPassword === "password123") {
       throw new Error("Insecure SEED_PASSWORD detected: 'password123' cannot be used in production mode");
     }
   }
 
-  const defaultPassword = process.env.SEED_PASSWORD || "password123";
+  const defaultPassword = seedPassword || "password123";
   const passwordHash = await bcrypt.hash(defaultPassword, 10);
 
   // 1. Seed Users (>= 3 Customers, >= 2 Operators)
