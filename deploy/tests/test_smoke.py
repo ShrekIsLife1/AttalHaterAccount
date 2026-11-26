@@ -18,16 +18,20 @@ spec.loader.exec_module(smoke)
 
 
 class SmokeTests(unittest.TestCase):
-    def response(self, base, path, data=None, token=None):
-        return {
+    def response(self, base, path, data=None, token=None, cookie=None):
+        # All mocked responses return (body_bytes, set_cookie_header)
+        body = {
             '/api/health': b'{"status":"ok"}',
             '/api/ready': b'{"db":"connected"}',
             '/': b'<html></html>',
             '/api/products': b'[{"id":1}]',
-            '/api/auth/login': b'{"token":"test-session"}',
+            '/api/auth/login': b'{"user":{"id":1,"role":"OPERATOR"}}',
             '/api/auth/me': b'{"id":1}',
             '/api/auth/logout': b'{}',
         }[path]
+        # Simulate a sid cookie returned on login
+        cookie_header = 'sid=test-session; Path=/; HttpOnly' if path == '/api/auth/login' else ''
+        return body, cookie_header
 
     @patch.dict('os.environ', {}, clear=True)
     def test_public_checks_pass_and_skip_optional_login(self):
@@ -38,17 +42,19 @@ class SmokeTests(unittest.TestCase):
     @patch.dict('os.environ', {}, clear=True)
     def test_db_not_ready_fails_even_when_http_responds(self):
         def disconnected(base, path, **kwargs):
-            return b'{"db":"disconnected"}' if path == '/api/ready' else self.response(base, path)
+            if path == '/api/ready':
+                return b'{"db":"disconnected"}', ''
+            return self.response(base, path)
         with patch.object(smoke, 'request', side_effect=disconnected), patch.object(smoke.time, 'sleep'):
             with self.assertRaisesRegex(RuntimeError, '/api/ready'):
                 smoke.check('https://demo.test')
 
     @patch.dict('os.environ', {'SMOKE_EMAIL': 'smoke@example.test', 'SMOKE_PASSWORD': 'test-only'}, clear=True)
     def test_session_is_logged_out_even_if_me_fails(self):
-        def broken_me(base, path, data=None, token=None):
+        def broken_me(base, path, data=None, token=None, cookie=None):
             if path == '/api/auth/me':
                 raise ValueError('Broken response')
-            return self.response(base, path, data, token)
+            return self.response(base, path, data, token, cookie)
         with patch.object(smoke, 'request', side_effect=broken_me) as req:
             with self.assertRaisesRegex(RuntimeError, 'Login smoke'):
                 smoke.check('https://demo.test')

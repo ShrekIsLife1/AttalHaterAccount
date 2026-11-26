@@ -38,17 +38,20 @@ import urllib.request
 
 
 # --- HTTP helper --------------------------------------------------------------
-# Returns the response body (bytes). Raises on HTTP errors / timeouts.
-def request(base, path, data=None, token=None):
+# Returns the response body (bytes) and the cookie header. Raises on HTTP errors / timeouts.
+def request(base, path, data=None, token=None, cookie=None):
     headers = {}
     if data is not None:
         headers['Content-Type'] = 'application/json'
     if token:
         headers['Authorization'] = 'Bearer ' + token
+    if cookie:
+        headers['Cookie'] = cookie
     req = urllib.request.Request(base + path, headers=headers,
         data=json.dumps(data).encode() if data is not None else None)
     with urllib.request.urlopen(req, timeout=30) as response:
-        return response.read()
+        raw_cookie = response.getheader('Set-Cookie', '')
+        return response.read(), raw_cookie
 
 
 def check(base):
@@ -62,7 +65,8 @@ def check(base):
         # Retry: a cold Cloud Run instance may need a few seconds to start.
         for attempt in range(5):
             try:
-                if not predicate(request(base, path)):
+                body, _ = request(base, path)
+                if not predicate(body):
                     raise ValueError('Unexpected response')
                 break
             except (urllib.error.URLError, TimeoutError, ValueError):
@@ -77,18 +81,25 @@ def check(base):
     if not email or not password:
         print('SKIP login: optional smoke credentials not configured')
         return
-    token = None
+    session_cookie = None
     try:
-        login_res = json.loads(request(base, '/api/auth/login', {'email': email, 'password': password}))
-        token = login_res.get('token') if isinstance(login_res, dict) else None
-        request(base, '/api/auth/me', token=token)
+        # API uses cookie-based sessions (sid), not Bearer tokens.
+        body, raw_cookie = request(base, '/api/auth/login', {'email': email, 'password': password})
+        login_res = json.loads(body)
+        if not isinstance(login_res, dict) or 'user' not in login_res:
+            raise ValueError('Unexpected login response')
+        # Extract the session cookie (sid=...) to authenticate subsequent calls.
+        session_cookie = '; '.join(
+            part.split(';')[0] for part in raw_cookie.split(',') if 'sid' in part.split(';')[0]
+        ) or raw_cookie.split(';')[0] if raw_cookie else None
+        request(base, '/api/auth/me', cookie=session_cookie)
         print('PASS login and authenticated /api/auth/me')
     except (urllib.error.URLError, TimeoutError, ValueError, KeyError):
         raise RuntimeError('Login smoke check failed') from None
     finally:
         # Always end the session, even when a check above failed.
-        if token:
-            request(base, '/api/auth/logout', data={}, token=token)
+        if session_cookie:
+            request(base, '/api/auth/logout', data={}, cookie=session_cookie)
             print('PASS logout')
 
 
