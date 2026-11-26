@@ -61,7 +61,14 @@ DIGEST_IMAGE="$(gcloud artifacts docker images describe "$IMAGE" --project="$PRO
 #    ⭐ IMPORTANT: a failure here aborts the release (set -e) — service untouched.
 # ------------------------------------------------------------------------------
 if [[ "$ROLLBACK" == false ]]; then
-  gcloud run jobs update "$MIGRATE_JOB_NAME" --image="$DIGEST_IMAGE" --project="$PROJECT_ID" --region="$REGION" --quiet
+  gcloud run jobs update "$MIGRATE_JOB_NAME" \
+    --image="$DIGEST_IMAGE" \
+    --project="$PROJECT_ID" \
+    --region="$REGION" \
+    --set-cloudsql-instances="${PROJECT_ID}:${REGION}:s3c35c9bd-pg" \
+    --set-secrets="DATABASE_URL=s3c35c9bd-database-url:latest,ADMIN_PASSWORD=s3c35c9bd-admin-password:latest" \
+    --set-env-vars="NODE_ENV=production,TZ=Asia/Bangkok,SEED_DEMO_DATA=false" \
+    --quiet
   gcloud run jobs execute "$MIGRATE_JOB_NAME" --wait --project="$PROJECT_ID" --region="$REGION" --quiet
 else
   echo 'Rollback: reuse existing image; skip tests, build, migration and seed.'
